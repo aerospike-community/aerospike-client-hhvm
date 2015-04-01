@@ -17,15 +17,20 @@ Follow the [installation steps](http://www.aerospike.com/download/client/c/3.1.1
 
 ## Build and install Aerospike HHVM client
 Edit config.cmake file in the source and modify the following line:
+
     set(LIBAEROSPIKE, /usr/local)
+
 Replace '/usr/local' with the correct C client installation path (i.e. path to lib/libaerospike.so and include/aerospike)
+
     hphpize
     cmake . && make;
 
 ## Test
 Edit tests/aerospike.php and modify the following lines:
+
    $SERVER_IP = "localhost"
    $SERVER_PORT = 3000;
+
 Replace "localhost" and 3000 with the IP address and port of your Aerospike
 server.
 
