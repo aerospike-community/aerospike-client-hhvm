@@ -1,26 +1,29 @@
-## INSTRUCTIONS TO RUN THE BENCHMARK TOOL:
+# Performance Scripts
 
-    hhvm -d extension_dir=../ -d hhvm.extensions[]=aerospike.so benchmark.php 
-    [-h<HOST IP ADDRESS>|--host=<HOST IP ADDRESS>
-     -p<HOST PORT NUMBER>|--port=<HOST PORT NUMBER>
-     -w<WORKLOAD TYPE=R,W or RW>|--workload=<WORKLOAD TYPE=R,W or RW>
-     -o|--once
-     -k<NO. OF KEYS>|--keys<NO. OF KEYS>
-     -r</path/for/report/file>|--report=</path/for/report/file>
-     -u|--usage]
+## Single Process
+The read, write, and read-write-mix scripts do basic clocking of single process
+performance, one client talking to one cluster.
 
-## SAMPLE WAYS TO EXECUTE:
+### Write Performance
+`write.php` writes n times to a record with key ("test", "performance", "write")
 
-# Example 1:
+```bash
+hhvm -d extension_dir=../ -d hhvm.extensions[]=aerospike-hhvm.so write.php --host=192.168.119.3 --num-ops=100000
+```
 
-To perform a total of 50000 reads and writes randomly in the ratio of 80:20, execute all the operations once and quit, generating the report in an arbitrary path, use the following:
+### Read Performance
+`read.php` reads n times from a record with key ("test", "performance", "Write")
 
-    hhvm -d extension_dir=../ -d hhvm.extensions[]=aerospike.so benchmark.php -h"localhost" -p3000 -wRW -o -k50000 -r"/tmp/benchmark_report.log" OR
-    hhvm -d extension_dir=../ -d hhvm.extensions[]=aerospike.so benchmark.php --host="localhost" --port=3000 --workload=RW --once --keys=50000 --report="/tmp/benchmark_report.log"
+```bash
+hhvm -d extension_dir=../ -d hhvm.extensions[]=aerospike-hhvm.so read.php --host=192.168.119.3 --num-ops=100000
+```
 
-# Example 2: 
+### Read-Write Performance
+`read-write-mix.php` measures combined writes and reads with a given ratio.
 
-To perform a total of 50000 reads, execute the operations infinitely until externally stopped using "Ctrl+C", generating the report on the console, use the following:
+For example a test of 250k read-write operations with a 9:1 ratio:
 
-    hhvm -d extension_dir=../ -d hhvm.extensions[]=aerospike.so benchmark.php -wR -k100000
+```bash
+hhvm -d extension_dir=../ -d hhvm.extensions[]=aerospike-hhvm.so read-write-mix.php --host=192.168.119.3 --num-ops=250000 --write-every=10
+```
 

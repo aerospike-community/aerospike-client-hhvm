@@ -28,10 +28,10 @@ Replace '/usr/local' with the correct C client installation path (i.e. path to l
 ## Test
 Edit tests/aerospike.php and modify the following lines:
 
-   $SERVER_IP = "localhost"
-   $SERVER_PORT = 3000;
-
+    $SERVER_IP = "localhost"
+    $SERVER_PORT = 3000;
+    
 Replace "localhost" and 3000 with the IP address and port of your Aerospike
 server.
 
-    hhvm -d extension_dir=. -d hhvm.extensions[]=aerospike.so tests/aerospike.php
+    hhvm -d extension_dir=. -d hhvm.extensions[]=aerospike-hhvm.so tests/aerospike.php
