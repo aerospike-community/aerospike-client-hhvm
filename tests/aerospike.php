@@ -1,22 +1,31 @@
 <?php
+
 $SERVER_IP = "localhost";
 $SERVER_PORT = 3000;
 $conf = array("hosts"=>array(array("addr"=>$SERVER_IP, "port"=>$SERVER_PORT)));
 $db = new Aerospike($conf);
 
 if (!$db->isConnected()) {
-    echo "Connection not established!";
+    echo "Connection not established!\n";
     echo "Error ". $db->errorno() . " : " . $db->error() . "\n" ;
     exit -1;
 } else {
+    echo "Connection is established!\n";
     $key =  $db->initKey("test", "test-set", "test-key");
-    $rec = array("test-bin-1"=>"test-value-1", "test-bin-2"=>"test-value-2", "test-bin-3"=>100);
+    $rec = array("test-bin-1"=>"test-value-1",
+                 "test-bin-2"=>1000,
+                 "test-bin-3"=>array("name"=>"John",
+                                     "hobby"=>"dance",
+                                     4=>1000,
+                                     "skills"=>array("c", "cpp", "python", "php"),
+                                     "grades"=>array("total"=>8, "major"=>9)),
+                 "test-bin-4"=>array("hello", "world", 120,
+                                     array("Data Structures", "Networking", "Operating Systems"),
+                                     array("cities"=>array("Atlanta", "Boston", "Newyork"), "age"=>25)));
     $status = $db->put($key, $rec);
     if ($status != Aerospike::OK) {
         echo "Error ". $db->errorno() . " : " . $db->error() . "\n" ;
     }
-
-    $data=array();
     $status = $db->get($key, $data);
     if ($status != Aerospike::OK) {
         echo "Error ". $db->errorno() . " : " . $db->error() . "\n" ;

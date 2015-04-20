@@ -6,6 +6,11 @@ extern "C" {
 }
 
 namespace HPHP {
+    /*
+     ************************************************************************************
+     * Constant Static Strings used throughout the extension code.
+     ************************************************************************************
+     */
     const StaticString s_Aerospike("Aerospike");
     const StaticString s_hosts("hosts");
     const StaticString s_addr("addr");
@@ -13,7 +18,21 @@ namespace HPHP {
     const StaticString s_ns("ns");
     const StaticString s_set("set");
     const StaticString s_key("key");
+    const StaticString s_digest("digest");
+    const StaticString s_metadata("metadata");
+    const StaticString s_ttl("ttl");
+    const StaticString s_generation("generation");
+    const StaticString s_bins("bins");
 
+    /*
+     ************************************************************************************
+     * Aerospike class to maintain the following data:
+     * 1. Aerospike C client's connection object
+     * 2. latest instance level error
+     * 3. is_connected flag
+     * 4. ref_count for the Aerospike C client's connection object reference
+     ************************************************************************************
+     */
     class Aerospike {
         public:
             aerospike *as_p{nullptr};
@@ -21,22 +40,9 @@ namespace HPHP {
             bool is_connected = false;
             int ref_count = 0;
 
-            Aerospike() { }
-            ~Aerospike() {
-                sweep();
-            }
-            void sweep() {
-                as_error error;
-                if (as_p) {
-                    if (0 != ref_count) {
-                        aerospike_close(as_p, &error);
-                        ref_count = 0;
-                    }
-                    aerospike_destroy(as_p);
-                    as_p = nullptr;
-                    is_connected = false;
-                }
-            }
+            Aerospike();
+            void sweep();
+            ~Aerospike();
     };
 
     void HHVM_METHOD(Aerospike, __construct, const Array& config);
