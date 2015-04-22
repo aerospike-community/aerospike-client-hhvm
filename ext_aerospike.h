@@ -48,7 +48,7 @@ namespace HPHP {
     void HHVM_METHOD(Aerospike, __construct, const Array& config);
     bool HHVM_METHOD(Aerospike, isConnected);
     int HHVM_METHOD(Aerospike, close);
-    int HHVM_METHOD(Aerospike, put, const Array& php_key, const Array& php_rec);
+    int HHVM_METHOD(Aerospike, put, const Array& php_key, const Array& php_rec, int64_t ttl);
     int HHVM_METHOD(Aerospike, get, const Array& php_key, VRefParam php_rec);
     int HHVM_METHOD(Aerospike, errorno);
     String HHVM_METHOD(Aerospike, error);

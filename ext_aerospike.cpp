@@ -140,7 +140,7 @@ exit:
 
     /* {{{ proto int Aerospike::put( array key, array record [, int ttl=0 [, array options ]] )
        Writes a record to the cluster */
-    int HHVM_METHOD(Aerospike, put, const Array& php_key, const Array& php_rec)
+    int HHVM_METHOD(Aerospike, put, const Array& php_key, const Array& php_rec, int64_t ttl)
     {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
@@ -159,7 +159,7 @@ exit:
             goto exit;
         }
 
-        if (AEROSPIKE_OK != php_record_to_as_record(php_rec, rec, static_pool, error)) {
+        if (AEROSPIKE_OK != php_record_to_as_record(php_rec, rec, ttl, static_pool, error)) {
             goto exit;
         }
 

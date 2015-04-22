@@ -106,6 +106,7 @@ namespace HPHP {
         { AEROSPIKE_ERR_QUERY                   ,   "ERR_QUERY"                         },
         { AEROSPIKE_ERR_UDF_NOT_FOUND           ,   "ERR_UDF_NOT_FOUND"                 },
         { AEROSPIKE_ERR_LUA_FILE_NOT_FOUND      ,   "ERR_LUA_FILE_NOT_FOUND"            },
+        { AS_DIGEST_VALUE_SIZE                  ,   "DIGEST_VALUE_SIZE"              },
         /*
          * PHP Client Specific Constants
          */

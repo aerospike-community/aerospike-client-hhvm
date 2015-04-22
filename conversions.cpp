@@ -177,9 +177,9 @@ namespace HPHP {
         if (PHP_KEY_SIZE != php_key.size() ||
                 !php_key.exists(s_ns) ||
                 !php_key.exists(s_set) ||
-                !php_key.exists(s_key)) {
+                !(php_key.exists(s_key) || php_key.exists(s_digest))) {
             return as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                    "PHP Key must be an assoc array(ns, set, key)");
+                    "PHP Key must be an assoc array(ns, set, key) or assoc array(ns, set, digest)");
         }
 
         if (!(php_key[s_ns].isString())) {
@@ -196,19 +196,40 @@ namespace HPHP {
         
         set_p = php_key[s_set].toString().c_str();
 
-        if (php_key[s_key].isInteger()) {
-            if (!as_key_init_int64(&key, ns_p, set_p, php_key[s_key].toInt64())) {
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,                   
-                        "Unable to initialize integer as_key")
+        if (php_key.exists(s_key)) {
+            if (php_key[s_key].isInteger()) {
+                if (!as_key_init_int64(&key, ns_p, set_p, php_key[s_key].toInt64())) {
+                    return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                            "Unable to initialize integer as_key");
+                }
+            } else if (php_key[s_key].isString()) {
+                if (!as_key_init_str(&key, ns_p, set_p, php_key[s_key].toString().c_str())) {
+                    return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                            "Unable to initialize string as_key");
+                }
+            } else {
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Invalid key: Expecting a string/integer");
             }
-        } else if (php_key[s_key].isString()) {
-            if (!as_key_init_str(&key, ns_p, set_p, php_key[s_key].toString().c_str())) {
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,                   
-                        "Unable to initialize string as_key")
+        } else if (php_key.exists(s_digest)) {
+            if (php_key[s_digest].isInteger()) {
+                as_digest_value digest = {0};
+                snprintf((char *) digest, AS_DIGEST_VALUE_SIZE, "%d", (int) php_key[s_digest].toInt64());
+                if (!as_key_init_digest(&key, ns_p, set_p, digest)) {
+                    return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                            "Unable to initialize integer as_key with the given digest");
+                }
+            } else if (php_key[s_digest].isString() && php_key[s_digest].toString().size()) {
+                as_digest_value digest = {0};
+                strncpy((char *) digest, php_key[s_digest].toString().c_str(), php_key[s_digest].toString().size());
+                if (!as_key_init_digest(&key, ns_p, set_p, digest)) {
+                    return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to initialize string as_key with the given digest");
+                }
+            } else {
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Invalid digest: Expecting a string/integer");
             }
-        } else {
-            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                    "Invalid key: Expecting a string/integer");
         }
 
         return error.code;
@@ -406,7 +427,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status php_record_to_as_record(const Array& php_record, as_record& record, StaticPoolManager& static_pool, as_error& error)
+    as_status php_record_to_as_record(const Array& php_record, as_record& record, int64_t ttl, StaticPoolManager& static_pool, as_error& error)
     {
         const char      *bin_name_p = NULL;
 
@@ -461,6 +482,8 @@ namespace HPHP {
                     "Unsupported type of value for the record");
             }
         }
+
+        record.ttl = ttl;
         return error.code;
     }
 
