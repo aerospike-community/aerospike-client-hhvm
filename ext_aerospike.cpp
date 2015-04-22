@@ -2,6 +2,7 @@
 #include "hphp/runtime/base/execution-context.h"
 #include "hphp/runtime/vm/native-data.h"
 #include "conversions.h"
+#include "constants.h"
 #include "ext_aerospike.h"
 
 namespace HPHP {
@@ -227,11 +228,15 @@ exit:
      * API for PHP userland.
      ************************************************************************************
      */
+
     class AerospikeExtension : public Extension {
         public:
             AerospikeExtension(): Extension("aerospike", "1.0") {}
             void moduleInit() override
             {
+                for (uint32_t i = 0; i <= EXTENSION_CONSTANTS_SIZE; i++) {
+                    Native::registerClassConstant<KindOfInt64>(s_Aerospike.get(), StaticString(extension_constants[i].constant_name).get(), extension_constants[i].constant_no);
+                }
                 HHVM_ME(Aerospike, __construct);
                 HHVM_ME(Aerospike, isConnected);
                 HHVM_ME(Aerospike, close);

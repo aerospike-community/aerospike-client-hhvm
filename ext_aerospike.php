@@ -1,8 +1,6 @@
 <?hh
 <<__NativeData("Aerospike")>>
 class Aerospike {
-    const OK = 0;
-
     <<__Native>>
         public function __construct(array $config): void;
     <<__Native>>
