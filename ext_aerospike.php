@@ -12,11 +12,13 @@ class Aerospike {
     <<__Native>>
         public function get(array $key, mixed& $rec, mixed $options = NULL): int;
     <<__Native>>
+        public function operate(array $key, array $operations, mixed& $returned = NULL): int;
+    <<__Native>>
         public function errorno(): int;
     <<__Native>>
         public function error(): string;
 
-    public function initKey(String $ns, String $set, mixed $key, bool $digest=false) {
+    public function initKey(String $ns, String $set, mixed $key, bool $digest = false) {
         if (!is_int($key) && !is_string($key)) {
             return NULL;
         }

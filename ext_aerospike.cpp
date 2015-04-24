@@ -225,6 +225,48 @@ exit:
     }
     /* }}} */
 
+    /* {{{ proto int Aerospike::operate ( array key, array operations [, array &returned [, array options ]] )
+       Performs multiple operations on a record */
+    int HHVM_METHOD(Aerospike, operate, const Array& php_key, const Array& php_operations, VRefParam returned)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_key              key;
+        StaticPoolManager   static_pool;
+        as_operations       operations;
+        as_record           *rec_p = NULL;
+
+        as_error_init(&error);
+
+        if (!data->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Invalid aerospike connection object");
+            goto exit;
+        }
+
+        if (AEROSPIKE_OK != php_key_to_as_key(php_key, key, error)) {
+            goto exit;
+        }
+
+        if (AEROSPIKE_OK != php_operations_to_as_operations(php_operations, operations, static_pool, error)) {
+            goto exit;
+        }
+
+        as_record_init(rec_p, 0);
+        aerospike_key_operate(data->as_p, &error, NULL, &key, &operations, &rec_p);
+
+        if (rec_p) {
+            if (AEROSPIKE_OK != as_record_to_php_record(rec_p, &key, returned, error)) {
+                goto exit;
+            }
+        }
+
+        as_record_destroy(rec_p);
+exit:
+        as_error_copy(&data->latest_error, &error);
+        return error.code;
+    }
+    /* }}} */
+
     /* {{{ proto string Aerospike::error ( void )
        Displays the error message associated with the last operation */
     int HHVM_METHOD(Aerospike, errorno)
@@ -263,6 +305,7 @@ exit:
                 HHVM_ME(Aerospike, close);
                 HHVM_ME(Aerospike, put);
                 HHVM_ME(Aerospike, get);
+                HHVM_ME(Aerospike, operate);
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL, "aerospike.connect_timeout", "1000", &ini_entry.connect_timeout);
