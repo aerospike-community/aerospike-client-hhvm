@@ -31,5 +31,25 @@ class Aerospike {
         }
         return array("ns" => $ns, "set" => $set, "key" => $key);
     }
+
+    public function append(array $key, string $bin, string $value): int {
+        $operations = array(array("op" => self::OPERATOR_APPEND, "bin" => $bin, "val" => $value));
+        return $this->operate($key, $operations);
+    }
+
+    public function prepend(array $key, string $bin, string $value): int {
+        $operations = array(array("op" => self::OPERATOR_PREPEND, "bin" => $bin, "val" => $value));
+        return $this->operate($key, $operations);
+    }
+
+    public function increment(array $key, string $bin, int $offset): int {
+        $operations = array(array("op" => self::OPERATOR_INCR, "bin" => $bin, "val" => $offset));
+        return $this->operate($key, $operations);
+    }
+
+    public function touch(array $key, int $ttl = 0/*, int $generation = 0*/): int {
+        $operations = array(array("op" => self::OPERATOR_TOUCH, "metadata" => array("ttl" => $ttl/*, "generation" => $generation*/)));
+        return $this->operate($key, $operations);
+    }
 }
 
