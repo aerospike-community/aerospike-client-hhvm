@@ -4,6 +4,8 @@ extern "C" {
 #include "aerospike/as_scan.h"
 #include "aerospike/as_udf.h"
 #include "aerospike/as_error.h"
+#include "aerospike/aerospike_index.h"
+#include "aerospike/as_operations.h"
 }
 namespace HPHP {
     #define MAX_SIZE_OF_CONSTANT_NAME 512
@@ -155,7 +157,15 @@ namespace HPHP {
         { AS_POLICY_CONSISTENCY_LEVEL_ONE       ,   "POLICY_CONSISTENCY_ONE"            },
         { AS_POLICY_CONSISTENCY_LEVEL_ALL       ,   "POLICY_CONSISTENCY_ALL"            },
         { AS_POLICY_COMMIT_LEVEL_ALL            ,   "POLICY_COMMIT_LEVEL_ALL"           },
-        { AS_POLICY_COMMIT_LEVEL_MASTER         ,   "POLICY_COMMIT_LEVEL_MASTER"        }
+        { AS_POLICY_COMMIT_LEVEL_MASTER         ,   "POLICY_COMMIT_LEVEL_MASTER"        },
+        { AS_INDEX_STRING                       ,   "INDEX_TYPE_STRING"                 },
+        { AS_INDEX_NUMERIC                      ,   "INDEX_TYPE_INTEGER"                },
+        { AS_OPERATOR_WRITE                     ,   "OPERATOR_WRITE"                    },
+        { AS_OPERATOR_READ                      ,   "OPERATOR_READ"                     },
+        { AS_OPERATOR_INCR                      ,   "OPERATOR_INCR"                     },
+        { AS_OPERATOR_PREPEND                   ,   "OPERATOR_PREPEND"                  },
+        { AS_OPERATOR_APPEND                    ,   "OPERATOR_APPEND"                   },
+        { AS_OPERATOR_TOUCH                     ,   "OPERATOR_TOUCH"                    }
 };
 
 #define EXTENSION_CONSTANTS_SIZE (sizeof(extension_constants)/sizeof(aerospike_constants))

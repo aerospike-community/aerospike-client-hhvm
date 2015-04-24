@@ -487,6 +487,170 @@ namespace HPHP {
         return error.code;
     }
 
+    static as_status set_operation(as_operations& operations, int32_t& op, const char *bin_p, Variant& val, StaticPoolManager& static_pool, as_error& error)
+    {
+        switch (op) {
+            case AS_OPERATOR_APPEND:
+                {
+                    if (!bin_p) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Not expected an empty bin for append operation");
+                    }
+
+                    if (!val.isString()) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Invalid value type: expected a string value for append operation");
+                    }
+
+                    if (!as_operations_add_append_str(&operations, bin_p, val.toString().c_str())) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Unable to append");
+                    }
+                    break;
+                }
+        case AS_OPERATOR_PREPEND:
+                {
+                    if (!bin_p) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Not expected an empty bin for prepend operation");
+                    }
+
+                    if (!val.isString()) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Invalid value type: expected a string value for prepend operation");
+                    }
+
+                    if (!as_operations_add_prepend_str(&operations, bin_p, val.toString().c_str())) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Unable to prepend");
+                    }
+                    break;
+                }
+        case AS_OPERATOR_INCR:
+                {
+                    if (!bin_p) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Not expected an empty bin for increment operation");
+                    }
+
+                    if (!val.isInteger()) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Invalid value type: expected an integer value for increment operation");
+                    }
+
+                    if (!as_operations_add_incr(&operations, bin_p, val.toInt64())) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Unable to increment");
+                    }
+                    break;
+                }
+        case AS_OPERATOR_TOUCH:
+                {
+                    if (!as_operations_add_touch(&operations)) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Unable to touch");
+                    }
+                    break;
+                }
+        case AS_OPERATOR_READ:
+                {
+                    if (!bin_p) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Not expected an empty bin for read operation");
+                    }
+
+                    if (!as_operations_add_read(&operations, bin_p)) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Unable to read");
+                    }
+                    break;
+                }
+        case AS_OPERATOR_WRITE:
+                {
+                    if (!bin_p) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Not expected an empty bin for write operation");
+                    }
+                    
+                    as_val *write_value_p = NULL;
+                    if (AEROSPIKE_OK != php_variant_to_as_val(val, &write_value_p, static_pool, error)) {
+                        return error.code;
+                    }
+
+                    if (!as_operations_add_write(&operations, bin_p, (as_bin_value *) write_value_p)) {
+                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                "Unable to write");
+                    }
+
+                    break;
+                }
+        default:
+                {
+                    return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                            "Invalid operation");
+                }
+    }
+
+        return error.code;
+    }
+
+    static as_status set_php_operation_within_as_operations(as_operations& operations, const Array &php_operation, StaticPoolManager& static_pool, as_error& error)
+    {
+        int32_t op = 0;
+        const char *bin_p = NULL;
+        Variant val;
+
+        for (ArrayIter iter(php_operation); iter; ++iter) {
+            Variant key = iter.first();
+            Variant value = iter.second();
+
+            if (!key.isString()) {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Invalid operation keys");
+                break;
+            }
+
+            if ((key.toString() == s_op) && value.isInteger()) {
+                op = value.toInt64();
+            } else if ((key.toString() == s_bin) && value.isString()) {
+                bin_p = value.toString().c_str();
+            } else if (key.toString() == s_val) {
+                val = value;
+            } else {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Invalid operation: expecting an associative array (op, bin, value)");
+                break;
+            }
+        }
+
+        if (!bin_p && op != AS_OPERATOR_TOUCH) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                "Invalid operation: expecting an associative array (op, bin, value)");
+        }
+
+        set_operation(operations, op, bin_p, val, static_pool, error);
+
+        return error.code;
+    }
+
+    as_status php_operations_to_as_operations(const Array& php_operations, as_operations& operations, StaticPoolManager& static_pool, as_error& error)
+    {
+        as_error_reset(&error);
+
+        as_operations_init(&operations, php_operations.size());
+
+        for (ArrayIter iter(php_operations); iter; ++iter) {
+            Variant php_operation = iter.second();
+            if (!php_operation.isArray()) {
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Expecting each operation to be an array"); 
+            } else if (AEROSPIKE_OK != set_php_operation_within_as_operations(operations, php_operation.toArray(), static_pool, error)) {
+                break;
+            }
+        }
+        return error.code;
+    }
+
     /*
      *******************************************************************************************
      * Callback function for each as_list element

@@ -25,6 +25,7 @@ namespace HPHP {
     extern as_status php_variant_to_as_val(const Variant& php_variant, as_val **val_pp, StaticPoolManager& static_pool, as_error& error);
     extern as_status php_list_to_as_list(const Array& php_list, as_list **list_pp, StaticPoolManager& static_pool, as_error& error);
     extern as_status php_map_to_as_map(const Array& php_map, as_map **map_pp, StaticPoolManager& static_pool, as_error& error);
+    extern as_status php_operations_to_as_operations(const Array& php_operations, as_operations& operations, StaticPoolManager& static_pool, as_error& error);
     extern as_status as_record_to_php_record(const as_record *record_p, const as_key *key_p, VRefParam php_rec, as_error& error);
     extern as_status as_val_to_php_variant(const as_val *value_p, Variant& php_value, as_error& error);
     extern as_status as_list_to_php_list(const as_list *list_p, Variant& php_list, as_error& error);

@@ -23,6 +23,9 @@ namespace HPHP {
     const StaticString s_ttl("ttl");
     const StaticString s_generation("generation");
     const StaticString s_bins("bins");
+    const StaticString s_op("op");
+    const StaticString s_bin("bin");
+    const StaticString s_val("val");
 
     /*
      ************************************************************************************
@@ -50,6 +53,7 @@ namespace HPHP {
     int HHVM_METHOD(Aerospike, close);
     int HHVM_METHOD(Aerospike, put, const Array& php_key, const Array& php_rec, int64_t ttl);
     int HHVM_METHOD(Aerospike, get, const Array& php_key, VRefParam php_rec);
+    int HHVM_METHOD(Aerospike, operate, const Array& php_key, const Array& operations, VRefParam returned);
     int HHVM_METHOD(Aerospike, errorno);
     String HHVM_METHOD(Aerospike, error);
 
