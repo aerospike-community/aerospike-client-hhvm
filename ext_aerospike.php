@@ -2,15 +2,15 @@
 <<__NativeData("Aerospike")>>
 class Aerospike {
     <<__Native>>
-        public function __construct(array $config): void;
+        public function __construct(array $config, mixed $options = NULL): void;
     <<__Native>>
         public function isConnected(): bool;
     <<__Native>>
         public function close(): int;
     <<__Native>>
-        public function put(array $key, array $rec, int $ttl=0): int;
+        public function put(array $key, array $rec, int $ttl=0, mixed $options = NULL): int;
     <<__Native>>
-        public function get(array $key, mixed& $rec): int;
+        public function get(array $key, mixed& $rec, mixed $options = NULL): int;
     <<__Native>>
         public function errorno(): int;
     <<__Native>>

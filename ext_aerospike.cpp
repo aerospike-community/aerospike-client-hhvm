@@ -4,9 +4,11 @@
 #include "conversions.h"
 #include "constants.h"
 #include "ext_aerospike.h"
+#include "policy.h"
 
 namespace HPHP {
 
+	ini_entries ini_entry;
     /*
      ************************************************************************************
      * Definitions of Member functions of Class Aerospike declared in
@@ -61,11 +63,12 @@ namespace HPHP {
 
     /* {{{ proto Aerospike::__construct(array config [, bool persistent_connection=true [, array options]]))
       Creates a new Aerospike object, with optional persistent connection control */
-    void HHVM_METHOD(Aerospike, __construct, const Array& php_config)
+    void HHVM_METHOD(Aerospike, __construct, const Array& php_config, const Variant& options)
     {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_config           config;
+        PolicyManager       policy_manager(&config);
 
         as_error_init(&error);
 
@@ -77,13 +80,18 @@ namespace HPHP {
         if (AEROSPIKE_OK != php_config_to_as_config(php_config, config, error)) {
             goto exit;
         }
-        
+
+        if (AEROSPIKE_OK != policy_manager.set_config_policies(options, error)) {
+            goto exit;
+        }
+
         data->as_p = aerospike_new(&config);
         if (AEROSPIKE_OK != aerospike_connect(data->as_p, &error)) {
             aerospike_destroy(data->as_p);
             data->as_p = NULL;
             goto exit;
         }
+
         data->is_connected = true;
         data->ref_count++;
 exit:
@@ -140,13 +148,16 @@ exit:
 
     /* {{{ proto int Aerospike::put( array key, array record [, int ttl=0 [, array options ]] )
        Writes a record to the cluster */
-    int HHVM_METHOD(Aerospike, put, const Array& php_key, const Array& php_rec, int64_t ttl)
+    int HHVM_METHOD(Aerospike, put, const Array& php_key, const Array& php_rec, int64_t ttl,
+			 const Variant& options)
     {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_key              key;
         as_record           rec;
         StaticPoolManager   static_pool;
+        as_policy_write     write_policy;
+        PolicyManager       policy_manager(&write_policy, "write", &data->as_p->config);
 
         as_error_init(&error);
 
@@ -162,8 +173,12 @@ exit:
         if (AEROSPIKE_OK != php_record_to_as_record(php_rec, rec, ttl, static_pool, error)) {
             goto exit;
         }
+        
+        if (AEROSPIKE_OK != policy_manager.set_policy(options, error)) {
+            goto exit;
+        }
 
-        aerospike_key_put(data->as_p, &error, NULL, &key, &rec);
+        aerospike_key_put(data->as_p, &error, &write_policy, &key, &rec);
         as_record_destroy(&rec);
 exit:
         as_error_copy(&data->latest_error, &error);
@@ -173,12 +188,14 @@ exit:
 
     /* {{{ proto int Aerospike::get( array key, array record [, array filter [, array options]] )
        Reads a record from the cluster */
-    int HHVM_METHOD(Aerospike, get, const Array& php_key, VRefParam php_rec)
+    int HHVM_METHOD(Aerospike, get, const Array& php_key, VRefParam php_rec, const Variant& options)
     {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_key              key;
         as_record           *rec_p = NULL;
+        as_policy_read      read_policy;
+        PolicyManager       policy_manager(&read_policy, "read", &data->as_p->config);
 
         if (!data->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Invalid aerospike connection object");
@@ -188,8 +205,12 @@ exit:
         if (AEROSPIKE_OK != php_key_to_as_key(php_key, key, error)) {
             goto exit;
         }
-
-        if (AEROSPIKE_OK != aerospike_key_get(data->as_p, &error, NULL, &key, &rec_p)) {
+        
+        if (AEROSPIKE_OK != policy_manager.set_policy(options, error)) {
+            goto exit;
+        }
+        
+        if (AEROSPIKE_OK != aerospike_key_get(data->as_p, &error, &read_policy, &key, &rec_p)) {
             goto exit;
         }
 
@@ -244,6 +265,13 @@ exit:
                 HHVM_ME(Aerospike, get);
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL, "aerospike.connect_timeout", "1000", &ini_entry.connect_timeout);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL, "aerospike.read_timeout", "1000", &ini_entry.read_timeout);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL, "aerospike.write_timeout", "1000", &ini_entry.write_timeout);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL, "aerospike.key_policy", "1", &ini_entry.key_policy);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL, "aerospike.nesting_depth", "3", &ini_entry.nesting_depth);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL, "aerospike.log_path", NULL, &ini_entry.log_path);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL, "aerospike.log_level", NULL, &ini_entry.log_level);
                 Native::registerNativeDataInfo<Aerospike>(s_Aerospike.get());
                 loadSystemlib();
             }

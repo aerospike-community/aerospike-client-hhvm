@@ -1,3 +1,6 @@
+#ifndef __CONVERSIONS_H__
+#define __CONVERSIONS_H__
+
 #include "hphp/runtime/base/base-includes.h"
 #include "hphp/runtime/base/execution-context.h"
 #include "hphp/runtime/vm/native-data.h"
@@ -74,4 +77,4 @@ namespace HPHP {
         __foreach_callback_udata(Array &init_data, as_error& init_error) : data(init_data), error(init_error) {}
     } foreach_callback_udata;
 } // namespace HPHP
-
+#endif /* end of __CONVERSIONS_H__ */

@@ -1,3 +1,6 @@
+#ifndef __CONSTANTS_H__
+#define __CONSTANTS_H__
+
 extern "C" {
 #include "aerospike/as_status.h"
 #include "aerospike/as_policy.h"
@@ -161,3 +164,4 @@ namespace HPHP {
 #define EXTENSION_CONSTANTS_SIZE (sizeof(extension_constants)/sizeof(aerospike_constants))
 
 } // namespace HPHP
+#endif /* end of __CONSTANTS_H__ */

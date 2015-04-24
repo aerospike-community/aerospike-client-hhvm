@@ -3,7 +3,8 @@
 $SERVER_IP = "localhost";
 $SERVER_PORT = 3000;
 $conf = array("hosts"=>array(array("addr"=>$SERVER_IP, "port"=>$SERVER_PORT)));
-$db = new Aerospike($conf);
+$config_options = array(Aerospike::OPT_WRITE_TIMEOUT=>8000);
+$db = new Aerospike($conf, $config_options);
 
 if (!$db->isConnected()) {
     echo "Connection not established!\n";
@@ -21,17 +22,19 @@ if (!$db->isConnected()) {
                                      "grades"=>array("total"=>8, "major"=>9)),
                  "test-bin-4"=>array("hello", "world", 120,
                                      array("Data Structures", "Networking", "Operating Systems"),
-                                     array("cities"=>array("Atlanta", "Boston", "Newyork"), "age"=>25)));
+									 array("cities"=>array("Atlanta", "Boston", "Newyork"), "age"=>25)));
+	$options = array(Aerospike::OPT_WRITE_TIMEOUT=>5000);
     $status = $db->put($key, $rec);
     if ($status != Aerospike::OK) {
         echo "Error ". $db->errorno() . " : " . $db->error() . "\n" ;
     }
+    //$status = $db->get($key, $data, array(Aerospike::OPT_READ_TIMEOUT=>8999));
     $status = $db->get($key, $data);
     if ($status != Aerospike::OK) {
         echo "Error ". $db->errorno() . " : " . $db->error() . "\n" ;
     } else {
         var_dump($data);
-    }
+	}
 }
 $db->close();
 
