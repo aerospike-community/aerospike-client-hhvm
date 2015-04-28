@@ -21,7 +21,11 @@ namespace HPHP {
      * Constructor
      ************************************************************************************
      */
-    Aerospike::Aerospike() { }
+    Aerospike::Aerospike() 
+    {
+        pthread_rwlock_init(&latest_error_mutex, NULL);
+        pthread_rwlock_init(&connection_mutex, NULL);
+    }
 
     /*
      ************************************************************************************
@@ -72,30 +76,27 @@ namespace HPHP {
 
         as_error_init(&error);
 
+        pthread_rwlock_wrlock(&data->connection_mutex);
+
         if (data->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Connection already exists!");
-            goto exit;
+        } else if (AEROSPIKE_OK == php_config_to_as_config(php_config, config, error)) {
+            if (AEROSPIKE_OK == policy_manager.set_config_policies(options, error)) {
+                data->as_p = aerospike_new(&config);
+                if (AEROSPIKE_OK == aerospike_connect(data->as_p, &error)) {
+                    data->is_connected = true;
+                    data->ref_count++;
+                } else {
+                    aerospike_destroy(data->as_p);
+                    data->as_p = NULL;
+                }
+            }
         }
 
-        if (AEROSPIKE_OK != php_config_to_as_config(php_config, config, error)) {
-            goto exit;
-        }
-
-        if (AEROSPIKE_OK != policy_manager.set_config_policies(options, error)) {
-            goto exit;
-        }
-
-        data->as_p = aerospike_new(&config);
-        if (AEROSPIKE_OK != aerospike_connect(data->as_p, &error)) {
-            aerospike_destroy(data->as_p);
-            data->as_p = NULL;
-            goto exit;
-        }
-
-        data->is_connected = true;
-        data->ref_count++;
-exit:
+        pthread_rwlock_unlock(&data->connection_mutex);
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
     }
     /* }}} */
 
@@ -123,25 +124,22 @@ exit:
         as_error_init(&error);
         if (!data->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Invalid aerospike connection object");
-            goto exit;
-        }
-
-        if (!data->is_connected ||
+        } else if (!data->is_connected ||
                 data->ref_count < 1) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Already disconnected!");
-            goto exit;
+        } else {
+            data->ref_count--;
+
+            if (0 == data->ref_count) {
+                aerospike_close(data->as_p, &error);
+            }
+
+            data->is_connected = false;
         }
 
-        data->ref_count--;
-
-        if (0 == data->ref_count) {
-            aerospike_close(data->as_p, &error);
-        }
-
-        data->is_connected = false;
-
-exit:
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
         return error.code;
     }
     /* }}} */
@@ -163,25 +161,18 @@ exit:
 
         if (!data->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Invalid aerospike connection object");
-            goto exit;
-        }
-
-        if (AEROSPIKE_OK != php_key_to_as_key(php_key, key, error)) {
-            goto exit;
-        }
-
-        if (AEROSPIKE_OK != php_record_to_as_record(php_rec, rec, ttl, static_pool, error)) {
-            goto exit;
+        } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
+            if (AEROSPIKE_OK == php_record_to_as_record(php_rec, rec, ttl, static_pool, error)) {
+                if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
+                    aerospike_key_put(data->as_p, &error, &write_policy, &key, &rec);
+                    as_record_destroy(&rec);
+                }
+            }
         }
         
-        if (AEROSPIKE_OK != policy_manager.set_policy(options, error)) {
-            goto exit;
-        }
-
-        aerospike_key_put(data->as_p, &error, &write_policy, &key, &rec);
-        as_record_destroy(&rec);
-exit:
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
         return error.code;
     }
     /* }}} */
@@ -199,28 +190,18 @@ exit:
 
         if (!data->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Invalid aerospike connection object");
-            goto exit;
-        }
-
-        if (AEROSPIKE_OK != php_key_to_as_key(php_key, key, error)) {
-            goto exit;
-        }
-        
-        if (AEROSPIKE_OK != policy_manager.set_policy(options, error)) {
-            goto exit;
+        } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
+            if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
+                if (AEROSPIKE_OK == aerospike_key_get(data->as_p, &error, &read_policy, &key, &rec_p)) {
+                    as_record_to_php_record(rec_p, &key, php_rec, error);
+                }
+                as_record_destroy(rec_p);
+            }
         }
         
-        if (AEROSPIKE_OK != aerospike_key_get(data->as_p, &error, &read_policy, &key, &rec_p)) {
-            goto exit;
-        }
-
-        if (AEROSPIKE_OK != as_record_to_php_record(rec_p, &key, php_rec, error)) {
-            goto exit;
-        }
-
-        as_record_destroy(rec_p);
-exit:
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
         return error.code;
     }
     /* }}} */
@@ -240,29 +221,20 @@ exit:
 
         if (!data->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Invalid aerospike connection object");
-            goto exit;
-        }
-
-        if (AEROSPIKE_OK != php_key_to_as_key(php_key, key, error)) {
-            goto exit;
-        }
-
-        if (AEROSPIKE_OK != php_operations_to_as_operations(php_operations, operations, static_pool, error)) {
-            goto exit;
-        }
-
-        as_record_init(rec_p, 0);
-        aerospike_key_operate(data->as_p, &error, NULL, &key, &operations, &rec_p);
-
-        if (rec_p) {
-            if (AEROSPIKE_OK != as_record_to_php_record(rec_p, &key, returned, error)) {
-                goto exit;
+        } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
+            if (AEROSPIKE_OK == php_operations_to_as_operations(php_operations, operations, static_pool, error)) {
+                as_record_init(rec_p, 0);
+                aerospike_key_operate(data->as_p, &error, NULL, &key, &operations, &rec_p);
+                if (rec_p) {
+                    as_record_to_php_record(rec_p, &key, returned, error);
+                    as_record_destroy(rec_p);
+                }
             }
         }
 
-        as_record_destroy(rec_p);
-exit:
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
         return error.code;
     }
     /* }}} */

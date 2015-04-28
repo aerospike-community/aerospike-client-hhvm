@@ -26,7 +26,7 @@ if (!$db->isConnected()) {
                                      array("Data Structures", "Networking", "Operating Systems"),
 									 array("cities"=>array("Atlanta", "Boston", "Newyork"), "age"=>25)));
 	$options = array(Aerospike::OPT_WRITE_TIMEOUT=>5000);
-    $status = $db->put($key, $rec, $options);
+    $status = $db->put($key, $rec, NULL, $options);
     if ($status != Aerospike::OK) {
         echo "Error ". $db->errorno() . " : " . $db->error() . "\n" ;
     }

@@ -3,6 +3,7 @@ extern "C" {
 #include "aerospike/as_config.h"
 #include "aerospike/aerospike_key.h"
 #include "aerospike/as_status.h"
+#include "pthread.h"
 }
 
 namespace HPHP {
@@ -42,6 +43,8 @@ namespace HPHP {
             as_error latest_error;
             bool is_connected = false;
             int ref_count = 0;
+            pthread_rwlock_t latest_error_mutex;
+            pthread_rwlock_t connection_mutex;
 
             Aerospike();
             void sweep();

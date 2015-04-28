@@ -355,9 +355,6 @@ namespace HPHP {
             as_list_append(*list_pp, val_p);
         }
 
-        if (AEROSPIKE_OK != error.code) {
-            as_list_destroy(*list_pp);
-        }
         return error.code;
     }
 
@@ -408,9 +405,6 @@ namespace HPHP {
             as_map_set(*map_pp, key_p, val_p);
         }
 
-        if (AEROSPIKE_OK != error.code) {
-            as_map_destroy(*map_pp);
-        }
         return error.code;
     }
 
@@ -955,11 +949,11 @@ namespace HPHP {
         }
 
         if (key_p->ns && strlen(key_p->ns) > 0) {
-            php_key.set(s_ns, String(key_p->ns));
+            php_key.set(s_ns, Variant(String(key_p->ns)));
         }
 
         if (key_p->set && strlen(key_p->set) > 0) {
-            php_key.set(s_set, String(key_p->set));
+            php_key.set(s_set, Variant(String(key_p->set)));
         }
 
         if (key_p->valuep) {
