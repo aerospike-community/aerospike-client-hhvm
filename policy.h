@@ -1,7 +1,7 @@
 #ifndef __POLICY_H__
 #define __POLICY_H__
 
-#include "hphp/runtime/base/base-includes.h"
+#include "hphp/runtime/ext/extension.h"
 #include "hphp/runtime/base/execution-context.h"
 #include "hphp/runtime/vm/native-data.h"
 
