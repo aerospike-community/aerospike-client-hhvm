@@ -637,10 +637,8 @@ class Put extends AerospikeTestCommon
      $list2 = array(105,"r","s","t","p",$list1);
      if ($db->isConnected()) {
          $status = $db->put($key,array("bin1"=>$list2));
-         echo "put sattus is ".$status;
         $this->keys[] = $key;
      } else {
-         echo "not connected\n";
          return $db->errorno();
      }
      if ($status !== Aerospike::OK) {
@@ -2237,10 +2235,10 @@ function testMixedTypesWithDefaultSerializer()
      }
      $this->keys[] = $key;
      $this->db->get($key, $get_record);
-      $comp_res = array_diff_assoc_recursive($put_record, $get_record["bins"]);
-      if (!empty($comp_res)) {
-          return Aerospike::ERR_RECORD_NOT_FOUND;
-          }
+     $comp_res = array_diff_assoc_recursive($put_record, $get_record["bins"]);
+     if (!empty($comp_res)) {
+         return Aerospike::ERR_RECORD_NOT_FOUND;
+     }
      return $put_status;
  }
 /**

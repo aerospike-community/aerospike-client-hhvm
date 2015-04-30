@@ -144,13 +144,13 @@ namespace HPHP {
             if (!host.exists(s_addr) ||
                     !host[s_addr].isString() ||
                     !host.exists(s_port) ||
-                    !host[s_port].isInteger()) {
+                    (!host[s_port].isInteger() && !host[s_port].isString())) {
                 return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Invalid hosts array: Value of each host is expected to be an array of addr, port");
             }
 
             config.hosts[i].addr = host[s_addr].toString().c_str();
-            config.hosts[i].port = host[s_port].toInt64();
+            config.hosts[i].port = host[s_port].isInteger() ? host[s_port].toInt64() : host[s_port].isString() ? atoi(host[s_port].toString().c_str()) : 0;
         }
         
         return error.code;
@@ -944,7 +944,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    static as_status as_key_to_php_key(const as_key *key_p, Array& php_key, as_policy_read *policy_p,
+    static as_status as_key_to_php_key(const as_key *key_p, Array& php_key, as_policy_key *key_policy_p,
             as_error& error)
     {
         as_error_reset(&error);
@@ -961,13 +961,10 @@ namespace HPHP {
             php_key.set(s_set, Variant(String(key_p->set)));
         }
 
-        if (policy_p->key == AS_POLICY_KEY_DIGEST) {
+        if (key_policy_p && *key_policy_p == AS_POLICY_KEY_DIGEST) {
             const String key_val;
             php_key.set(s_key, key_val);
-            return error.code;
-        }
-
-        if (key_p->valuep) {
+        } else if (key_p->valuep) {
             as_val *value_p = (as_val *) key_p->valuep;
             switch (as_val_type(value_p)) {
                 case AS_INTEGER:
@@ -1013,7 +1010,7 @@ namespace HPHP {
      *******************************************************************************************
      */
     as_status as_record_to_php_record(const as_record *record_p, const as_key *key_p, VRefParam php_record,
-            as_policy_read *policy_p, as_error& error)
+            as_policy_key *key_policy_p, as_error& error)
     {
         as_error_reset(&error);
         if (!record_p) {
@@ -1026,7 +1023,7 @@ namespace HPHP {
         Array php_metadata = Array::Create();
         Array php_bins = Array::Create();
 
-        as_key_to_php_key(key_p ? key_p : &record_p->key, php_key, policy_p, error);
+        as_key_to_php_key(key_p ? key_p : &record_p->key, php_key, key_policy_p, error);
         metadata_to_php_metadata(record_p, php_metadata, error);
         bins_to_php_bins(record_p, php_bins, error);
 

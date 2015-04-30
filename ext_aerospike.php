@@ -18,8 +18,10 @@ class Aerospike {
     <<__Native>>
         public function error(): string;
 
-    public function initKey(String $ns, String $set, mixed $key, bool $digest = false) {
-        if (!is_int($key) && !is_string($key)) {
+    public function initKey(mixed $ns, mixed $set, mixed $key, bool $digest = false) {
+        if ((!is_int($ns) && !is_string($ns)) ||
+            (!is_int($set) && !is_string($set)) ||
+            (!is_int($key) && !is_string($key))) {
             return NULL;
         }
         if ($digest) {
@@ -29,7 +31,7 @@ class Aerospike {
                 return NULL;
             }
         }
-        return array("ns" => $ns, "set" => $set, "key" => $key);
+        return array("ns" => (string) $ns, "set" => (string) $set, "key" => $key);
     }
 
     public function append(array $key, string $bin, mixed $value, mixed $options = NULL): int {

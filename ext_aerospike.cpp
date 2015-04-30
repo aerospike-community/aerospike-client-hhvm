@@ -87,6 +87,8 @@ namespace HPHP {
                     data->is_connected = true;
                     data->ref_count++;
                 } else {
+                    as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                            "Unable to connect to server");
                     aerospike_destroy(data->as_p);
                     data->as_p = NULL;
                 }
@@ -161,6 +163,8 @@ namespace HPHP {
 
         if (!data->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER, "put: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             if (AEROSPIKE_OK == php_record_to_as_record(php_rec, rec, ttl, static_pool, error)) {
                 if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
@@ -191,10 +195,12 @@ namespace HPHP {
 
         if (!data->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER, "get: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
                 if (AEROSPIKE_OK == aerospike_key_get(data->as_p, &error, &read_policy, &key, &rec_p)) {
-                    as_record_to_php_record(rec_p, &key, php_rec, &read_policy, error);
+                    as_record_to_php_record(rec_p, &key, php_rec, &read_policy.key, error);
                 }
                 as_record_destroy(rec_p);
             }
@@ -225,6 +231,8 @@ namespace HPHP {
 
         if (!data->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER, "operate: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             if (AEROSPIKE_OK == php_operations_to_as_operations(php_operations, operations, static_pool, error)) {
                 if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
