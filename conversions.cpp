@@ -437,6 +437,10 @@ namespace HPHP {
                 return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Invalid Bin Name type, expecting a string");
             }
+            if (strlen(bin_name_p) > AS_BIN_NAME_MAX_LEN) {
+                return as_error_update(&error, AEROSPIKE_ERR_BIN_NAME,
+                        "A bin name should not exceed 14 characters limit");
+            }
             Variant value = iter.second();
             if (value.isString()) {
                 if (!as_record_set_str(&record, bin_name_p, value.toString().c_str())) {
@@ -710,7 +714,7 @@ namespace HPHP {
             return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "List is null");
         }
-        Array                       temp_php_list;
+        Array                       temp_php_list = Array::Create();
         foreach_callback_udata      udata(temp_php_list, error);
         as_list_foreach(list_p, (as_list_foreach_callback) list_to_php_list_foreach_callback, &udata);
         php_list = temp_php_list;
@@ -771,7 +775,7 @@ namespace HPHP {
             return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Map is null");
         }
-        Array                       temp_php_map;
+        Array                       temp_php_map = Array::Create();
         foreach_callback_udata      udata(temp_php_map, error);
         as_map_foreach(map_p, (as_map_foreach_callback) map_to_php_map_foreach_callback, &udata);
         php_map = temp_php_map;
@@ -834,7 +838,7 @@ namespace HPHP {
             case AS_REC:
                 {
                     as_record *record_p = as_record_fromval(value_p);
-                    as_record_to_php_record(record_p, NULL, php_value, error);
+                    as_record_to_php_record(record_p, NULL, php_value, NULL, error);
                     break;
                 }
             case AS_NIL:
@@ -891,7 +895,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    static as_status bins_to_php_bins(const as_record *record_p, Array& php_bins, as_error& error)
+    as_status bins_to_php_bins(const as_record *record_p, Array& php_bins, as_error& error)
     {
         as_error_reset(&error);
         if (!record_p) {
@@ -940,7 +944,8 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    static as_status as_key_to_php_key(const as_key *key_p, Array& php_key, as_error& error)
+    static as_status as_key_to_php_key(const as_key *key_p, Array& php_key, as_policy_read *policy_p,
+            as_error& error)
     {
         as_error_reset(&error);
         if (!key_p) {
@@ -954,6 +959,12 @@ namespace HPHP {
 
         if (key_p->set && strlen(key_p->set) > 0) {
             php_key.set(s_set, Variant(String(key_p->set)));
+        }
+
+        if (policy_p->key == AS_POLICY_KEY_DIGEST) {
+            const String key_val;
+            php_key.set(s_key, key_val);
+            return error.code;
         }
 
         if (key_p->valuep) {
@@ -1001,7 +1012,8 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status as_record_to_php_record(const as_record *record_p, const as_key *key_p, VRefParam php_record, as_error& error)
+    as_status as_record_to_php_record(const as_record *record_p, const as_key *key_p, VRefParam php_record,
+            as_policy_read *policy_p, as_error& error)
     {
         as_error_reset(&error);
         if (!record_p) {
@@ -1014,7 +1026,7 @@ namespace HPHP {
         Array php_metadata = Array::Create();
         Array php_bins = Array::Create();
 
-        as_key_to_php_key(key_p ? key_p : &record_p->key, php_key, error);
+        as_key_to_php_key(key_p ? key_p : &record_p->key, php_key, policy_p, error);
         metadata_to_php_metadata(record_p, php_metadata, error);
         bins_to_php_bins(record_p, php_bins, error);
 

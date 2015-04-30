@@ -51,6 +51,7 @@ namespace HPHP {
             PolicyManager(void *policy_holder, char *policy_type, as_config *config_p);
             as_status set_policy(const Variant& options, as_error& error);
             as_status set_config_policies(const Variant& options, as_error& error);
+            as_status set_generation_value(uint16_t *gen_value, const Variant& options, as_error& error);
 
 /*
  *******************************************************************************************

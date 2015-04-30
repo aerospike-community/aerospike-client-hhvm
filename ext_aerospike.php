@@ -12,7 +12,7 @@ class Aerospike {
     <<__Native>>
         public function get(array $key, mixed& $rec, mixed $options = NULL): int;
     <<__Native>>
-        public function operate(array $key, array $operations, mixed& $returned = NULL): int;
+        public function operate(array $key, array $operations, mixed& $returned = NULL, mixed $options = NULL): int;
     <<__Native>>
         public function errorno(): int;
     <<__Native>>
@@ -32,24 +32,40 @@ class Aerospike {
         return array("ns" => $ns, "set" => $set, "key" => $key);
     }
 
-    public function append(array $key, string $bin, string $value): int {
+    public function append(array $key, string $bin, mixed $value, mixed $options = NULL): int {
+        $returned = NULL;
+        if (!is_int($value) && !is_string($value)) {
+            return NULL;
+        }
+        if (is_int($value)) {
+            $value = (string)$value;
+        }
         $operations = array(array("op" => self::OPERATOR_APPEND, "bin" => $bin, "val" => $value));
-        return $this->operate($key, $operations);
+        return $this->operate($key, $operations, $returned, $options);
     }
 
-    public function prepend(array $key, string $bin, string $value): int {
+    public function prepend(array $key, string $bin, mixed $value, mixed $options = NULL): int {
+        $returned = NULL;
+        if (!is_int($value) && !is_string($value)) {
+            return NULL;
+        }
+        if (is_int($value)) {
+            $value = (string)$value;
+        }
         $operations = array(array("op" => self::OPERATOR_PREPEND, "bin" => $bin, "val" => $value));
-        return $this->operate($key, $operations);
+        return $this->operate($key, $operations, $returned, $options);
     }
 
-    public function increment(array $key, string $bin, int $offset): int {
+    public function increment(array $key, string $bin, int $offset, mixed $options = NULL): int {
+        $returned = NULL;
         $operations = array(array("op" => self::OPERATOR_INCR, "bin" => $bin, "val" => $offset));
-        return $this->operate($key, $operations);
+        return $this->operate($key, $operations, $returned, $options);
     }
 
-    public function touch(array $key, int $ttl = 0/*, int $generation = 0*/): int {
+    public function touch(array $key, int $ttl = 0/*, int $generation = 0*/, mixed $options = NULL): int {
+        $returned = NULL;
         $operations = array(array("op" => self::OPERATOR_TOUCH, "metadata" => array("ttl" => $ttl/*, "generation" => $generation*/)));
-        return $this->operate($key, $operations);
+        return $this->operate($key, $operations, $returned, $options);
     }
 }
 
