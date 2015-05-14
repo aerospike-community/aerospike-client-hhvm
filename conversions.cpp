@@ -151,6 +151,7 @@ namespace HPHP {
 
             config.hosts[i].addr = host[s_addr].toString().c_str();
             config.hosts[i].port = host[s_port].isInteger() ? host[s_port].toInt64() : host[s_port].isString() ? atoi(host[s_port].toString().c_str()) : 0;
+            config.hosts_size++;
         }
         
         return error.code;

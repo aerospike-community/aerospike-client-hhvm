@@ -16,7 +16,5 @@ if (!check_for_socket(AEROSPIKE_CONFIG_NAME2, AEROSPIKE_CONFIG_PORT2)) {
 <?php
 include dirname(__FILE__)."/../../astestframework/astest-phpt-loader.inc";
 aerospike_phpt_runtest("Connection","testConnectWithSameConfigPersistasTrue");
---XFAIL--
-Fails because persistent connection support is not present.
 --EXPECT--
 OK
