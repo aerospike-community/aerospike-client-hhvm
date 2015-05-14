@@ -69,7 +69,11 @@ namespace HPHP {
             const Variant& options);
     int64_t HHVM_METHOD(Aerospike, remove, const Array& php_key,
             const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, removeBin, const Array& php_key,
+            const Array& bins, const Variant& options);
     int64_t HHVM_METHOD(Aerospike, exists, const Array& php_key,
+            VRefParam metadata, const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, existsMany, const Array& php_keys,
             VRefParam metadata, const Variant& options);
     String HHVM_METHOD(Aerospike, getKeyDigest, const Variant& ns,
             const Variant& set, const Variant& primary_key);
