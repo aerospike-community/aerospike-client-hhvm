@@ -4,6 +4,7 @@ extern "C" {
 #include "aerospike/aerospike_key.h"
 #include "aerospike/as_status.h"
 #include "pthread.h"
+#include "stdlib.h"
 }
 
 namespace HPHP {
@@ -51,15 +52,27 @@ namespace HPHP {
             ~Aerospike();
     };
 
-    void HHVM_METHOD(Aerospike, __construct, const Array& config, const Variant& options);
+    void HHVM_METHOD(Aerospike, __construct, const Array& config,
+            const Variant& options);
     bool HHVM_METHOD(Aerospike, isConnected);
     int HHVM_METHOD(Aerospike, close);
-    int64_t HHVM_METHOD(Aerospike, put, const Array& php_key, const Array& php_rec, int64_t ttl,
-			const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, get, const Array& php_key, VRefParam php_rec,
-			const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, operate, const Array& php_key, const Array& operations,
-            VRefParam returned, const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, put, const Array& php_key,
+            const Array& php_rec, int64_t ttl, const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, get, const Array& php_key,
+            VRefParam php_rec, const Variant& filter_bins,
+            const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, getMany, const Array& php_keys,
+            VRefParam php_records, const Variant& filter_bins,
+            const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, operate, const Array& php_key,
+            const Array& operations, VRefParam returned,
+            const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, remove, const Array& php_key,
+            const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, exists, const Array& php_key,
+            VRefParam metadata, const Variant& options);
+    String HHVM_METHOD(Aerospike, getKeyDigest, const Variant& ns,
+            const Variant& set, const Variant& primary_key);
     int64_t HHVM_METHOD(Aerospike, errorno);
     String HHVM_METHOD(Aerospike, error);
 

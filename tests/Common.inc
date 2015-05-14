@@ -38,13 +38,13 @@ abstract class AerospikeTestCommon extends ASTestFramework
             $this->db = new Aerospike($config);
         }
         // remove any records set up before the test
-        /*if (is_array($this->keys)) {
+        if (is_array($this->keys)) {
             foreach ($this->keys as $key) {
                 $this->db->remove($key);
             }
         } elseif (!is_null($this->keys)) {
             $this->db->remove($keys);
-		}*/
+		}
         $this->db->close();
     }
 

@@ -838,7 +838,7 @@ namespace HPHP {
             case AS_REC:
                 {
                     as_record *record_p = as_record_fromval(value_p);
-                    as_record_to_php_record(record_p, NULL, php_value, NULL, error);
+                    as_record_to_php_record(record_p, NULL, (Array& )php_value, NULL, error);
                     break;
                 }
             case AS_NIL:
@@ -920,7 +920,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    static as_status metadata_to_php_metadata(const as_record *record_p, Array& php_metadata, as_error& error)
+    as_status metadata_to_php_metadata(const as_record *record_p, Array& php_metadata, as_error& error)
     {
         as_error_reset(&error);
         if (!record_p) {
@@ -1002,14 +1002,14 @@ namespace HPHP {
      * @param record_p      as_record to be converted by this function
      * @param key_p         as_key to be used to populate PHP key within PHP
      *                      record array
-     * @param php_record    PHP variant reference to be populated by this
+     * @param php_record    PHP Array reference to be populated by this
      *                      function
      * @param error         as_error reference to be populated by this function
      *                      in case of error
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status as_record_to_php_record(const as_record *record_p, const as_key *key_p, VRefParam php_record,
+    as_status as_record_to_php_record(const as_record *record_p, const as_key *key_p, Array& php_record,
             as_policy_key *key_policy_p, as_error& error)
     {
         as_error_reset(&error);
@@ -1018,7 +1018,6 @@ namespace HPHP {
                     "Record is null");
         }
 
-        Array temp_php_record = Array::Create();
         Array php_key = Array::Create();
         Array php_metadata = Array::Create();
         Array php_bins = Array::Create();
@@ -1027,11 +1026,9 @@ namespace HPHP {
         metadata_to_php_metadata(record_p, php_metadata, error);
         bins_to_php_bins(record_p, php_bins, error);
 
-        temp_php_record.set(s_key, php_key);
-        temp_php_record.set(s_metadata, php_metadata);
-        temp_php_record.set(s_bins, php_bins);
-        php_record = temp_php_record;
-
+        php_record.set(s_key, php_key);
+        php_record.set(s_metadata, php_metadata);
+        php_record.set(s_bins, php_bins);
         return error.code;
     }
 } // namespace HPHP

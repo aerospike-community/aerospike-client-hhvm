@@ -127,8 +127,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status PolicyManager::set_generation_value(uint16_t *gen_value_p, const Variant& options_variant,
-            as_error& error) {
+    as_status PolicyManager::set_generation_value(uint16_t *gen_value_p, const Variant& options_variant, as_error& error) {
         as_error_reset(&error);
 
         if (!gen_value_p) {
@@ -139,7 +138,7 @@ namespace HPHP {
         Array  options = options_variant.toArray();
         if (options.exists(OPT_POLICY_GEN) && options[OPT_POLICY_GEN].isArray()) {
             Array gen_policy = options[OPT_POLICY_GEN].toArray();
-            if ( gen_policy.length() == 2 && gen_policy[1].isInteger()) {
+            if (gen_policy.length() == 2 && gen_policy[1].isInteger()) {
                 *gen_value_p = gen_policy[1].toInt32();
             } else {
                 return as_error_update(&error, AEROSPIKE_ERR_PARAM,
@@ -172,7 +171,7 @@ namespace HPHP {
         }
 
         if (!options_variant.isNull() && !options_variant.isArray()) {
-            return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Policy options must be of type an Array");
         }
         
@@ -186,6 +185,12 @@ namespace HPHP {
                 }
                 if (options.exists(OPT_POLICY_KEY) && options[OPT_POLICY_KEY].isInteger()) {
                     POLICY_SET_FIELD(read, key, options[OPT_POLICY_KEY].toInt32(), as_policy_key);
+                }
+                if (options.exists(OPT_POLICY_REPLICA) && options[OPT_POLICY_REPLICA].isInteger()) {
+                    POLICY_SET_FIELD(read, replica, options[OPT_POLICY_REPLICA].toInt32(), as_policy_replica);
+                }
+                if (options.exists(OPT_POLICY_CONSISTENCY) && options[OPT_POLICY_CONSISTENCY].isInteger()) {
+                    POLICY_SET_FIELD(read, consistency_level, options[OPT_POLICY_CONSISTENCY].toInt32(), as_policy_consistency_level);
                 }
             }
         } else if (strcmp(this->type, "write") == 0) {
@@ -208,6 +213,9 @@ namespace HPHP {
                 }
                 if (options.exists(OPT_POLICY_EXISTS) && options[OPT_POLICY_EXISTS].isInteger()) {
                     POLICY_SET_FIELD(write, exists, options[OPT_POLICY_EXISTS].toInt32(), as_policy_exists);
+                }
+                if (options.exists(OPT_POLICY_COMMIT_LEVEL) && options[OPT_POLICY_COMMIT_LEVEL].isInteger()) {
+                    POLICY_SET_FIELD(write, commit_level, options[OPT_POLICY_COMMIT_LEVEL].toInt32(), as_policy_commit_level);
                 }
             }
         } else if (strcmp(this->type, "operate") == 0) {
@@ -236,6 +244,37 @@ namespace HPHP {
                 }
                 if (options.exists(OPT_POLICY_COMMIT_LEVEL) && options[OPT_POLICY_COMMIT_LEVEL].isInteger()) {
                     POLICY_SET_FIELD(operate, commit_level, options[OPT_POLICY_COMMIT_LEVEL].toInt32(), as_policy_commit_level);
+                }
+            }
+        } else if (strcmp(this->type, "remove") == 0) {
+            as_policy_remove_copy(&(this->config_p->policies.remove), CURRENT_POLICY(remove));
+
+            if (options_variant.isArray()) {
+                Array  options = options_variant.toArray();
+                if (options.exists(OPT_WRITE_TIMEOUT) && options[OPT_WRITE_TIMEOUT].isInteger()) {
+                    POLICY_SET_FIELD(remove, timeout, options[OPT_WRITE_TIMEOUT].toInt32(), uint32_t);
+                }
+                if (options.exists(OPT_POLICY_KEY) && options[OPT_POLICY_KEY].isInteger()) {
+                    POLICY_SET_FIELD(remove, key, options[OPT_POLICY_KEY].toInt32(), as_policy_key);
+                }
+                if (options.exists(OPT_POLICY_RETRY) && options[OPT_POLICY_RETRY].isInteger()) {
+                    POLICY_SET_FIELD(remove, retry, options[OPT_POLICY_RETRY].toInt32(), as_policy_retry);
+                }
+                if (options.exists(OPT_POLICY_GEN) && options[OPT_POLICY_GEN].isArray()) {
+                    Array gen_policy = options[OPT_POLICY_GEN].toArray();
+                    POLICY_SET_FIELD(remove, gen, gen_policy[0].toInt32(), as_policy_gen);
+                }
+                if (options.exists(OPT_POLICY_COMMIT_LEVEL) && options[OPT_POLICY_COMMIT_LEVEL].isInteger()) {
+                    POLICY_SET_FIELD(remove, commit_level, options[OPT_POLICY_COMMIT_LEVEL].toInt32(), as_policy_commit_level);
+                }
+            }
+        } else if (strcmp(this->type, "batch") == 0) {
+            as_policy_batch_copy(&(this->config_p->policies.batch), CURRENT_POLICY(batch));
+
+            if (options_variant.isArray()) {
+                Array  options = options_variant.toArray();
+                if (options.exists(OPT_READ_TIMEOUT) && options[OPT_READ_TIMEOUT].isInteger()) {
+                    POLICY_SET_FIELD(batch, timeout, options[OPT_READ_TIMEOUT].toInt32(), uint32_t);
                 }
             }
         } else {

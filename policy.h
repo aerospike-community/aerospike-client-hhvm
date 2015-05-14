@@ -14,24 +14,43 @@ extern "C" {
 #include "constants.h"
 }
 
-/*
- *******************************************************************************************
- Structure for INI entries
- *******************************************************************************************
- */
-struct ini_entries {
-    int64_t connect_timeout;
-    int64_t read_timeout;
-    int64_t write_timeout;
-    int64_t key_policy;
-    int64_t nesting_depth;
-    std::string log_level;
-    std::string log_path;
-};
-
-extern struct ini_entries ini_entry;
-
 namespace HPHP {
+    /*
+     *******************************************************************************************
+     * Structure for INI entries
+     *******************************************************************************************
+     */
+    struct ini_entries {
+        int64_t connect_timeout;
+        int64_t read_timeout;
+        int64_t write_timeout;
+        int64_t key_policy;
+        int64_t nesting_depth;
+        std::string log_level;
+        std::string log_path;
+    };
+
+    extern struct ini_entries ini_entry;
+
+    /*
+     ************************************************************************************
+     * PolicyManager class to set following policies:
+     * 1. Global policy defaults within as_config
+     * 2. API level policies
+     * In order to instantiate this class, specify the policy pointer
+     * (as_policy_X *), type string (for example, "read" for as_policy_read) and
+     * as_config *, in case of global defaults in Aerospike constructor.
+     ************************************************************************************
+     * Methods:
+     ************************************************************************************
+     * 1. Use set_policy() method to set the appropriate policy fields by parsing the user's
+     * options array that consists of policies.
+     * 2. Use set_config_policies() method to set the appropriate policy fields
+     * in the config's global defaults by parsing the user's options array.
+     * 3. Use set_generation_value() method to set the generation value within
+     * the passed pointer by parsing the user's options array.
+     ************************************************************************************
+     */
     class PolicyManager {
         private:
             void *policy_holder;

@@ -5,8 +5,6 @@ Touch with generation policy POLICY_GEN_EQ positive.
 <?php
 include dirname(__FILE__)."/../../astestframework/astest-phpt-loader.inc";
 aerospike_phpt_runtest("Touch", "testTouchWithGenEQPositive");
---XFAIL--
-Fails because exists() API is currently not implemented, Which is used to get metadata(i.e. Generation value).
 --EXPECT--
 OK
 

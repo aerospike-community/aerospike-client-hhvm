@@ -10,9 +10,21 @@ class Aerospike {
     <<__Native>>
         public function put(array $key, array $rec, int $ttl=0, mixed $options = NULL): int;
     <<__Native>>
-        public function get(array $key, mixed& $rec, mixed $options = NULL): int;
+        public function get(array $key, mixed& $rec, mixed $filter = NULL, mixed $options = NULL): int;
+    <<__Native>>
+        public function getMany(array $keys, mixed& $records, mixed $filter = NULL, mixed $options = NULL): int;
     <<__Native>>
         public function operate(array $key, array $operations, mixed& $returned = NULL, mixed $options = NULL): int;
+    <<__Native>>
+        public function remove(array $key, mixed $options = NULL): int;
+    <<__Native>>
+        public function removeBin(array $key, array $bins, mixed $options = NULL): int;
+    <<__Native>>
+        public function exists(array $key, mixed& $metadata, mixed $options = NULL): int;
+    <<__Native>>
+        public function existsMany(array $keys, mixed& $metadata, mixed $options = NULL): int;
+    <<__Native>>
+        public function getKeyDigest(mixed $ns, mixed $set, mixed $key): string;
     <<__Native>>
         public function errorno(): int;
     <<__Native>>
