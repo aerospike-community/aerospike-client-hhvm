@@ -2,7 +2,7 @@
 <<__NativeData("Aerospike")>>
 class Aerospike {
     <<__Native>>
-        public function __construct(array $config, mixed $options = NULL): void;
+        public function __construct(array $config, bool $persistent_connection = true, mixed $options = NULL): void;
     <<__Native>>
         public function isConnected(): bool;
     <<__Native>>

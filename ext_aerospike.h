@@ -1,3 +1,6 @@
+#ifndef __EXT_AEROSPIKE_H__
+#define __EXT_AEROSPIKE_H__
+
 extern "C" {
 #include "aerospike/aerospike.h"
 #include "aerospike/as_config.h"
@@ -8,6 +11,34 @@ extern "C" {
 }
 
 namespace HPHP {
+#define MAX_PORT_SIZE 6
+
+    /*
+     *******************************************************************************************************
+     * Structure containing C client's aerospike object and its reference counter.
+     *******************************************************************************************************
+     */
+    typedef struct csdk_aerospike_object {
+        /*
+         * as_p holds the reference of internal C SDK aerospike object
+         */
+        aerospike *as_p;
+
+        /*
+         * ref_as_p indicates the no. of references for internal C
+         * SDK aerospike object being held by the various PHP userland Aerospike
+         * objects.
+         */
+        int ref_php_object;
+
+        /*
+         * ref_hosts_entry indicates the no. of references for internal C
+         * SDK aerospike object being held by entries in aerospike global
+         * persistent_list hashtable.
+         */
+        int ref_host_entry;
+    } aerospike_ref;
+
     /*
      ************************************************************************************
      * Constant Static Strings used throughout the extension code.
@@ -40,20 +71,25 @@ namespace HPHP {
      */
     class Aerospike {
         public:
-            aerospike *as_p{nullptr};
-            as_error latest_error;
+            aerospike_ref *as_ref_p{nullptr};
             bool is_connected = false;
-            int ref_count = 0;
+            bool is_persistent = false;
+            as_error latest_error;
             pthread_rwlock_t latest_error_mutex;
-            pthread_rwlock_t connection_mutex;
 
             Aerospike();
             void sweep();
             ~Aerospike();
+
+            as_status configure_connection(as_config& config, as_error& error);
+
+        private:
+            void create_new_host_entry(as_config& config, as_error& error);
+            void iterate_hosts_add_entry(as_config& config, int matched_host_id);
     };
 
     void HHVM_METHOD(Aerospike, __construct, const Array& config,
-            const Variant& options);
+            bool persistent_connection, const Variant& options);
     bool HHVM_METHOD(Aerospike, isConnected);
     int HHVM_METHOD(Aerospike, close);
     int64_t HHVM_METHOD(Aerospike, put, const Array& php_key,
@@ -81,4 +117,4 @@ namespace HPHP {
     String HHVM_METHOD(Aerospike, error);
 
 } // namespace HPHP
-
+#endif /* end of __EXT_AEROSPIKE_H__ */

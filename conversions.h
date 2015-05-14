@@ -15,6 +15,7 @@ extern "C" {
 #include "aerospike/as_hashmap.h"
 }
 
+
 namespace HPHP {
     class StaticPoolManager;
     /*

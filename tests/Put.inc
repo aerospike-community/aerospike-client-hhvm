@@ -2093,7 +2093,6 @@ function testMixedTypesWithDefaultSerializer()
      if (strcmp($get_record["key"]["ns"], $key["ns"]) == 0 &&
          strcmp($get_record["key"]["set"], $key["set"]) == 0 &&
          strcmp($get_record["key"]["key"], NULL) == 0) {
-             var_dump($get_record);
              $comp_res = array_diff_assoc_recursive($put_record,
                  $get_record["bins"]);
              if(!empty($comp_res)) {
