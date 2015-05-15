@@ -21,13 +21,19 @@ namespace HPHP {
      *******************************************************************************************
      */
     struct ini_entries {
-        int64_t connect_timeout;
-        int64_t read_timeout;
-        int64_t write_timeout;
-        int64_t key_policy;
-        int64_t nesting_depth;
+        int64_t     connect_timeout;
+        int64_t     read_timeout;
+        int64_t     write_timeout;
+        int64_t     key_policy;
+        int64_t     nesting_depth;
         std::string log_level;
         std::string log_path;
+        bool        shm_use;
+        int64_t     shm_max_nodes;
+        int64_t     shm_max_namespaces;
+        int64_t     shm_takeover_threshold_sec;
+        std::string lua_system_path;
+        std::string lua_user_path;
     };
 
     extern struct ini_entries ini_entry;

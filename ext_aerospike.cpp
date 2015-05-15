@@ -261,7 +261,8 @@ namespace HPHP {
     {
         auto                data = Native::data<Aerospike>(this_);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            // Invalid aerospike connection object
             return false;
         }
 
@@ -271,14 +272,14 @@ namespace HPHP {
 
     /* {{{ proto Aerospike::close( void )
        Closes all connections to the cluster */
-    int HHVM_METHOD(Aerospike, close)
+    int64_t HHVM_METHOD(Aerospike, close)
     {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
 
         as_error_init(&error);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
         } else if (!data->is_connected ||
@@ -309,6 +310,48 @@ namespace HPHP {
     }
     /* }}} */
 
+    /* {{{ proto Aerospike::reconnect( void )
+       Closes then reopens all connections to the cluster */
+    int64_t HHVM_METHOD(Aerospike, reconnect)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (data->is_connected ||
+                data->as_ref_p->ref_php_object >= 1) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Already connected!");
+        } else {
+            if (data->is_persistent == false) {
+                if (AEROSPIKE_OK == aerospike_connect(data->as_ref_p->as_p, &error)) {
+                    data->as_ref_p->ref_php_object = 1;
+                    data->is_connected = true;
+                }
+            } else {
+                /*
+                 * Decrements ref_php_object which indicates the no. of
+                 * references for internal CSDK aerospike object being held by
+                 * the various PHP userland functions.
+                 */
+                pthread_rwlock_wrlock(&connection_mutex);
+                data->as_ref_p->ref_php_object++;
+                pthread_rwlock_unlock(&connection_mutex);
+                data->is_connected = true;
+            }
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+        return error.code;
+    }
+    /* }}} */
+
     /* {{{ proto int Aerospike::put( array key, array record [, int ttl=0 [, array options ]] )
        Writes a record to the cluster */
     int64_t HHVM_METHOD(Aerospike, put, const Array& php_key,
@@ -327,7 +370,7 @@ namespace HPHP {
 
         as_error_init(&error);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
@@ -372,7 +415,7 @@ namespace HPHP {
         PolicyManager       policy_manager(&read_policy, "read",
                 &data->as_ref_p->as_p->config);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
@@ -428,7 +471,7 @@ namespace HPHP {
 
         as_error_init(&error);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
@@ -474,7 +517,7 @@ namespace HPHP {
 
         as_error_init(&error);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
@@ -525,7 +568,7 @@ namespace HPHP {
 
         as_error_init(&error);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
@@ -567,7 +610,7 @@ namespace HPHP {
 
         as_error_init(&error);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
@@ -613,7 +656,7 @@ namespace HPHP {
 
         as_error_init(&error);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
@@ -655,7 +698,7 @@ namespace HPHP {
 
         as_error_init(&error);
 
-        if (!data->as_ref_p->as_p) {
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
@@ -745,6 +788,7 @@ namespace HPHP {
                 HHVM_ME(Aerospike, __construct);
                 HHVM_ME(Aerospike, isConnected);
                 HHVM_ME(Aerospike, close);
+                HHVM_ME(Aerospike, reconnect);
                 HHVM_ME(Aerospike, put);
                 HHVM_ME(Aerospike, get);
                 HHVM_ME(Aerospike, getMany);
@@ -777,6 +821,26 @@ namespace HPHP {
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
                         "aerospike.log_level",
                         NULL, &ini_entry.log_level);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
+                        "aerospike.shm.use",
+                        "false", &ini_entry.shm_use);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
+                        "aerospike.shm.max_nodes",
+                        "16", &ini_entry.shm_max_nodes);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
+                        "aerospike.shm.max_namespaces",
+                        "8", &ini_entry.shm_max_namespaces);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
+                        "aerospike.shm.takeover_threshold_sec",
+                        "30", &ini_entry.shm_takeover_threshold_sec);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
+                        "aerospike.udf.lua_system_path",
+                        "/opt/aerospike/client-php/sys-lua",
+                        &ini_entry.shm_takeover_threshold_sec);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
+                        "aerospike.udf.lua_user_path",
+                        "/opt/aerospike/client-php/user-lua",
+                        &ini_entry.shm_takeover_threshold_sec);
                 Native::registerNativeDataInfo<Aerospike>(s_Aerospike.get());
                 pthread_rwlock_init(&connection_mutex, NULL);
                 loadSystemlib();

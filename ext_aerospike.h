@@ -91,7 +91,8 @@ namespace HPHP {
     void HHVM_METHOD(Aerospike, __construct, const Array& config,
             bool persistent_connection, const Variant& options);
     bool HHVM_METHOD(Aerospike, isConnected);
-    int HHVM_METHOD(Aerospike, close);
+    int64_t HHVM_METHOD(Aerospike, close);
+    int64_t HHVM_METHOD(Aerospike, reconnect);
     int64_t HHVM_METHOD(Aerospike, put, const Array& php_key,
             const Array& php_rec, int64_t ttl, const Variant& options);
     int64_t HHVM_METHOD(Aerospike, get, const Array& php_key,

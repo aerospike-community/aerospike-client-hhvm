@@ -8,6 +8,8 @@ class Aerospike {
     <<__Native>>
         public function close(): int;
     <<__Native>>
+        public function reconnect(): int;
+    <<__Native>>
         public function put(array $key, array $rec, int $ttl=0, mixed $options = NULL): int;
     <<__Native>>
         public function get(array $key, mixed& $rec, mixed $filter = NULL, mixed $options = NULL): int;

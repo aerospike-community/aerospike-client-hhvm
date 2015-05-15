@@ -102,6 +102,29 @@ namespace HPHP {
 
     /*
      *******************************************************************************************
+     * Helper function to check if shm is to be enabled in the php.ini and
+     * configure the shm parameters within the supplied as_config.
+     *******************************************************************************************
+     */
+    static void check_and_configure_shm(as_config& config)
+    {
+        std::string ini_value;
+        
+        if (IniSetting::Get("aerospike.shm.use", ini_value)) {
+            config.use_shm = true;
+            config.shm_max_nodes =
+                IniSetting::Get("aerospike.shm.max_nodes", ini_value) ? (uint32_t) atoi(ini_value.c_str()) : 16;
+            config.shm_max_namespaces =
+                IniSetting::Get("aerospike.shm.max_namespaces", ini_value) ? (uint32_t) atoi(ini_value.c_str()) : 8;
+            config.shm_takeover_threshold_sec =
+                IniSetting::Get("aerospike.shm.takeover_threshold_sec", ini_value) ? (uint32_t) atoi(ini_value.c_str()) : 30;
+        } else {
+            config.use_shm = false;
+        }
+    }
+
+    /*
+     *******************************************************************************************
      * Conversion APIs
      *******************************************************************************************
      */
@@ -120,7 +143,8 @@ namespace HPHP {
     as_status php_config_to_as_config(const Array& php_config, as_config& config, as_error& error)
     {
         as_error_reset(&error);
-
+        std::string ini_value;
+        
         if (!php_config.exists(s_hosts)) {
             return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Invalid config array: hosts key not found");
@@ -133,6 +157,15 @@ namespace HPHP {
 
         Array hosts_array = php_config[s_hosts].toArray();
         as_config_init(&config);
+        check_and_configure_shm(config);
+
+        if (IniSetting::Get("aerospike.udf.lua_system_path", ini_value)) {
+            strcpy(config.lua.system_path, ini_value.c_str());
+        }
+
+        if (IniSetting::Get("aerospike.udf.lua_user_path", ini_value)) {
+            strcpy(config.lua.user_path, ini_value.c_str());
+        }
 
         for (uint16_t i = 0; i < hosts_array.length(); i++) {
             if (!hosts_array[i].isArray()) {
