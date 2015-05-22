@@ -34,4 +34,9 @@ Edit tests/aerospike.php and modify the following lines:
 Replace "localhost" and 3000 with the IP address and port of your Aerospike
 server.
 
-    hhvm -d extension_dir=. -d hhvm.extensions[]=aerospike-hhvm.so tests/aerospike.php
+Add extension .so file in php.ini located at /etc/hhvm/php.ini as follows:
+    hhvm.extensions[] = <path/to/aerospike-client-hhvm/aerospike-hhvm.so>
+
+Run the tests:
+    HHVM_EXECUTABLE=`path` ./test.sh tests/phpt
+
