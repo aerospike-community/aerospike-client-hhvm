@@ -28,8 +28,11 @@ scripts.
 ## Running Tests:
 
 To run the testcases you can set environment variable `HHVM_EXECUTABLE` with HHVM executable.
+
     $ cd <path/to/aerospike-client-hhvm/src/aerospike>
+
 	$ export  HHVM_EXECUTABLE=`path`
+
 	$ scripts/test.sh tests/phpt
 
 To run testsuite:

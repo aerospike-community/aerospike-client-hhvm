@@ -20,9 +20,11 @@
 5. Edit test-rest-apis.sh to change num-conn and rate for the hhtperf testing.
 
 6. To run a simple sequential test of all REST APIs, run:
+
    $ sh test-rest-apis.sh
 
 7. To run a concurrent version of the test, invoking multiple background
    processes of the sequential test, run:
+
    $ sh concurrent-test.sh [number of processes]
 
