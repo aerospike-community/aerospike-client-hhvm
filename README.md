@@ -22,18 +22,19 @@ Edit config.cmake file in the source and modify the following line:
 
 Replace '/usr/local' with the correct C client installation path (i.e. path to lib/libaerospike.so and include/aerospike)
 
+    cd src/aerospike
     hphpize
     cmake . && make;
 
 ## Test
 Add extension .so file in php.ini located at /etc/hhvm/php.ini as follows:
 
-    hhvm.extensions[] = <path/to/aerospike-client-hhvm/aerospike-hhvm.so>
+    hhvm.extensions[] = <path/to/aerospike-client-hhvm/src/aerospike/aerospike-hhvm.so>
 
 Edit the file src/aerospike/tests/aerospike.inc with the IP address and port
 configuration of your Aerospike database server(s) before running the phpt scripts.
 
 Run the tests:
 
-    HHVM_EXECUTABLE=`path` ./test.sh tests/phpt
+    HHVM_EXECUTABLE=`path` scripts/test.sh tests/phpt
 

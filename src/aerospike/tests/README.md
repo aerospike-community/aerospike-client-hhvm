@@ -28,17 +28,18 @@ scripts.
 ## Running Tests:
 
 To run the testcases you can set environment variable `HHVM_EXECUTABLE` with HHVM executable.
+    $ cd <path/to/aerospike-client-hhvm/src/aerospike>
 	$ export  HHVM_EXECUTABLE=`path`
-	$ ./test.sh tests/phpt
+	$ scripts/test.sh tests/phpt
 
 To run testsuite:
-    Change directory to `aerospike-client-hhvm` and run:
+    Change directory to `aerospike-client-hhvm/src/aerospike` and run:
 
-    $ HHVM_EXECUTABLE=`path` ./test.sh tests/phpt
+    $ HHVM_EXECUTABLE=`path` scripts/test.sh tests/phpt
 
 To run only the phpt test cases for Put:
 
-    $ HHVM_EXECUTABLE=`path` ./test.sh tests/phpt/Put
+    $ HHVM_EXECUTABLE=`path` scripts/test.sh tests/phpt/Put
 
 HHVM_EXECUTABLE is a environment variable for HHVM executable which is optional to set.
 *path* is a HHVM executable path.
@@ -46,7 +47,7 @@ HHVM_EXECUTABLE is a environment variable for HHVM executable which is optional 
 ## Cleanup
 
 To clean up artifacts created by the tests you can run:
-    Change directory to `aerospike-client-hhvm` and run:
+    Change directory to `aerospike-client-hhvm/src/aerospike` and run:
 
-    $ ./test-cleanup.sh
+    $ scripts/test-cleanup.sh
 
