@@ -26,17 +26,14 @@ Replace '/usr/local' with the correct C client installation path (i.e. path to l
     cmake . && make;
 
 ## Test
-Edit tests/aerospike.php and modify the following lines:
-
-    $SERVER_IP = "localhost"
-    $SERVER_PORT = 3000;
-    
-Replace "localhost" and 3000 with the IP address and port of your Aerospike
-server.
-
 Add extension .so file in php.ini located at /etc/hhvm/php.ini as follows:
+
     hhvm.extensions[] = <path/to/aerospike-client-hhvm/aerospike-hhvm.so>
 
+Edit the file src/aerospike/tests/aerospike.inc with the IP address and port
+configuration of your Aerospike database server(s) before running the phpt scripts.
+
 Run the tests:
+
     HHVM_EXECUTABLE=`path` ./test.sh tests/phpt
 
