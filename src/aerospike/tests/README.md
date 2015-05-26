@@ -18,39 +18,30 @@ constants, such as **OK** or **ERR_RECORD_NOT_FOUND** as listed in
 
 ## Build Instructions
 
-Follow the build and installation steps described in this repository's main [README.md](../../../README.md) file.  Please use a standard build (without the **-l** flag), as a debug build will cause the tests to fail.
+Follow the build and installation steps described in this repository's main
+[README.md](../../../README.md) file.  Please use a standard build
+(without the **-l** flag), as a debug build will cause the tests to fail.
 
 ## Configuration:
 
-Edit the file `src/aerospike/tests/aerospike.inc` with the IP address and port configuration of your Aerospike database server(s) before running the phpt
-scripts.
+Edit the file `src/aerospike/tests/aerospike.inc` with the IP address and port
+of a node in your Aerospike cluster before running the phpt scripts.
 
 ## Running Tests:
 
 To run the testcases you can set environment variable `HHVM_EXECUTABLE` with HHVM executable.
 
-    $ cd <path/to/aerospike-client-hhvm/src/aerospike>
-
-	$ export  HHVM_EXECUTABLE=`path`
-
-	$ scripts/test.sh tests/phpt
-
-To run testsuite:
-    Change directory to `aerospike-client-hhvm/src/aerospike` and run:
-
-    $ HHVM_EXECUTABLE=`path` scripts/test.sh tests/phpt
+    cd /path/to/aerospike-client-hhvm/src/aerospike/
+    scripts/test.sh tests/phpt
 
 To run only the phpt test cases for Put:
 
-    $ HHVM_EXECUTABLE=`path` scripts/test.sh tests/phpt/Put
-
-HHVM_EXECUTABLE is a environment variable for HHVM executable which is optional to set.
-*path* is a HHVM executable path.
+    scripts/test.sh tests/phpt/Put
 
 ## Cleanup
 
 To clean up artifacts created by the tests you can run:
     Change directory to `aerospike-client-hhvm/src/aerospike` and run:
 
-    $ scripts/test-cleanup.sh
+    scripts/test-cleanup.sh
 

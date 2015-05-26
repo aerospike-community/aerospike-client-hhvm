@@ -1,40 +1,50 @@
 # Aerospike HHVM Client
 This is a prototype of [HHVM Native Interface](https://github.com/facebook/hhvm/wiki/Extension-API) for Aerospike Client.
 
-
 Currently tested on Ubuntu 14.04 LTS 64 bit
 
 ## Install HHVM
-    wget -O - http://dl.hhvm.com/conf/hhvm.gpg.key | \
-    sudo apt-key add -
-    echo deb http://dl.hhvm.com/ubuntu trusty main | \
-    sudo tee /etc/apt/sources.list.d/hhvm.list
-    sudo apt-get update
-    sudo apt-get install hhvm-dev
+The HHVM manual provides [installation](http://docs.hhvm.com/manual/en/install-intro.install.php)
+and [prebuilt packages](https://github.com/facebook/hhvm/wiki/Prebuilt-Packages-for-HHVM).
 
 ## Install Aerospike C client
-Follow the [installation steps](http://www.aerospike.com/download/client/c/3.1.11/) for installing the underlying C client or you may choose to build it from [source](https://github.com/aerospike/aerospike-client-c).
+Get the [latest Aerospike C Client](http://www.aerospike.com/download/client/c/latest/)
+library, and install the development package contained in the tar archive.
+Alternatively, you can build the C client [from source](https://github.com/aerospike/aerospike-client-c).
+
+For example, on Ubuntu, you would download the tarball, extract it, then:
+
+    sudo dpkg -i aerospike-client-c-devel-3.1.16.ubuntu12.04.x86_64.deb
 
 ## Build and install Aerospike HHVM client
-Edit config.cmake file in the source and modify the following line:
-
-    set(LIBAEROSPIKE, /usr/local)
-
-Replace '/usr/local' with the correct C client installation path (i.e. path to lib/libaerospike.so and include/aerospike)
 
     cd src/aerospike
     hphpize
-    cmake . && make;
+    cmake . && make
+    sudo make install
+
+The `make install` step should state the path where the extension is installed.
+You will use that path in the next step ([Configure](#configure)).
+
+    vagrant@ubuntu-14:/vagrant/aerospike-client-hhvm/src/aerospike$ sudo make install
+    [100%] Built target aerospike-hhvm
+    Install the project...
+    -- Install configuration: "Debug"
+    -- Installing: /usr/lib/x86_64-linux-gnu/hhvm/extensions/20150212/aerospike-hhvm.so
+
+If during the build you see an error that complains about the location of Aerospike
+header files (for example, `fatal error: aerospike/aerospike_key.h: No such
+file or directory`) you will need to edit the `config.cmake` file.
+
+* Edit the target\_link\_libraries to the path containing the C client
+  (`libaerospike.so`).
+* Edit include\_directories to the directory which contains the C client's
+  header files.
+
+## Configure
+Add the extension to HHVM by editing /etc/hhvm/php.ini as follows:
+
+    hhvm.extensions[] = /path/to/aerospike-hhvm.so
 
 ## Test
-Add extension .so file in php.ini located at /etc/hhvm/php.ini as follows:
-
-    hhvm.extensions[] = <path/to/aerospike-client-hhvm/src/aerospike/aerospike-hhvm.so>
-
-Edit the file src/aerospike/tests/aerospike.inc with the IP address and port
-configuration of your Aerospike database server(s) before running the phpt scripts.
-
-Run the tests:
-
-    HHVM_EXECUTABLE=`path` scripts/test.sh tests/phpt
-
+Run the unit tests as described in [tests/README](tests/README.md)
