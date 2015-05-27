@@ -51,9 +51,9 @@ namespace HPHP {
             if (as_ref_p->ref_php_object != 0) {
                 aerospike_close(as_ref_p->as_p, &error);
                 as_ref_p->ref_php_object = 0;
-                aerospike_destroy(as_ref_p->as_p);
-                as_ref_p->as_p = NULL;
             }
+            aerospike_destroy(as_ref_p->as_p);
+            as_ref_p->as_p = NULL;
 
             if (as_ref_p) {
                 free(as_ref_p);
@@ -242,7 +242,6 @@ namespace HPHP {
                             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                                     "Unable to connect to server");
                             aerospike_destroy(data->as_ref_p->as_p);
-                            data->as_ref_p->ref_php_object--;
                             data->as_ref_p->as_p = NULL;
                         }
                     }
