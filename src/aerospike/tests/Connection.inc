@@ -351,5 +351,47 @@ class Connection extends AerospikeTestCommon
         $db->close();
         return Aerospike::OK;
     }
+
+    /**
+     * @test
+     * Non-persistent connect, Config with random host(IP:PORT)
+     *
+     * @pre
+     * Connect using aerospike object to the specified node
+     *
+     * @post
+     * newly initialized Aerospike objects
+     *
+     * @remark
+     * Variants: OO (testNonPersistentConnectRandomHost)
+     *
+     * @test_plans{1.1}
+     */
+    function testNonPersistentConnectRandomHost() {
+        $config = array("hosts"=>array(array("addr"=>"10.73.80.56", "port"=>"3000")));
+        $db = new Aerospike($config, false);
+        return($db->errorno());
+    }
+
+    /**
+     * @test
+     * Persistent connect, Config with random host(IP:PORT)
+     *
+     * @pre
+     * Connect using aerospike object to the specified node
+     *
+     * @post
+     * newly initialized Aerospike objects
+     *
+     * @remark
+     * Variants: OO (testPersistentConnectRandomHost)
+     *
+     * @test_plans{1.1}
+     */
+    function testPersistentConnectRandomHost() {
+        $config = array("hosts"=>array(array("addr"=>"10.73.80.568", "port"=>"3000")));
+        $db = new Aerospike($config);
+        return($db->errorno());
+    }
 } 
 ?>
