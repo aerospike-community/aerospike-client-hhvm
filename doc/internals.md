@@ -1,12 +1,10 @@
 
-# Aerospike PHP Client Internal Architecture
+# Aerospike HHVM Client Internal Architecture
 
-The Aerospike PHP client provides access to the Aerospike server via a
-set of PHP object classes.  The objects are implanted as a PHP extension
-implemented in the C programming language using the Zend Engine
-extension API.  The Aerospike PHP client extension is layered on top of
-the Aerospike C client.  [Note:  The Aerospike C client version 3 is
-required by the PHP client, as is Lua 5.1.]
+The Aerospike HHVM client provides access to the Aerospike server via a
+set of PHP object classes.  The objects are implanted as an HNI extension.
+The Aerospike HHVM client extension is layered on top of
+the Aerospike C client.
 
 The Aerospike PHP client API is structurally quit similar to the other
 Aerospike client APIs, especially the Java client API.
@@ -87,6 +85,6 @@ PHP strings, integers and associative arrays should map directly to the
 equivalent types on the database - string, integer, list, and map.
 
 ### Handling Unsupported Types
-PHP values which do not have a directly mappable bin type need to be handled
-in configurable way, whether by calling a specified serializer or by throwing an
-explicit error.
+The HHVM client currently does not handle types such as float, boolean and
+object. In future releases those will be handled in a similar way to the PHP
+client (Zend extension).
