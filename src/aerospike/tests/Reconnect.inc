@@ -180,5 +180,57 @@ class Reconnect extends AerospikeTestCommon
     {
         return ($this->db->reconnect());
     }
+
+    /**
+     * @test
+     * Basic Reconnect on invalid connection(Random IP:PORT) for non-persistent connection.
+     *
+     * @pre
+     * Connect using aerospike object to the specified node
+     *
+     * @post
+     * newly initialized Aerospike objects
+     *
+     * @remark
+     * Variants: OO (testReconnectNonPersistentConnectionNegative)
+     *
+     * @test_plans{1.1}
+     */
+    function testReconnectNonPersistentConnectionNegative()
+    {
+        $config = array("hosts"=>array(array("addr"=>"152.23.5.9",
+            "port"=>3000)));
+        $db1 = new Aerospike($config, false);
+        $reconnect_status = $db1->reconnect();
+        if (Aerospike::OK != $reconnect_status) {
+            return $db1->errorno();
+        }
+    }
+
+    /**
+     * @test
+     * Basic Reconnect on invalid connection(Random IP:PORT) for persistent connection.
+     *
+     * @pre
+     * Connect using aerospike object to the specified node
+     *
+     * @post
+     * newly initialized Aerospike objects
+     *
+     * @remark
+     * Variants: OO (testReconnectPersistentConnectionNegative)
+     *
+     * @test_plans{1.1}
+     */
+    function testReconnectPersistentConnectionNegative()
+    {
+        $config = array("hosts"=>array(array("addr"=>"152.23.5.9",
+            "port"=>3000)));
+        $db1 = new Aerospike($config);
+        $reconnect_status = $db1->reconnect();
+        if (Aerospike::OK != $reconnect_status) {
+            return $db1->errorno();
+        }
+    }
 }
 ?>

@@ -47,19 +47,28 @@ namespace HPHP {
 
         as_error_init(&error);
 
-        if (as_ref_p && is_persistent == false) {
-            if (as_ref_p->ref_php_object != 0) {
-                aerospike_close(as_ref_p->as_p, &error);
-                as_ref_p->ref_php_object = 0;
-            }
-            aerospike_destroy(as_ref_p->as_p);
-            as_ref_p->as_p = NULL;
+        if (as_ref_p) {
+            if (is_connected) {
+                pthread_rwlock_wrlock(&connection_mutex);
+                as_ref_p->ref_php_object--;
+                pthread_rwlock_unlock(&connection_mutex);
+                is_connected = false;
 
-            if (as_ref_p) {
-                free(as_ref_p);
+                if (!is_persistent) {
+                    aerospike_close(as_ref_p->as_p, &error);
+                    aerospike_destroy(as_ref_p->as_p);
+                    as_ref_p->as_p = NULL;
+                    free(as_ref_p);
+                }
+            } else {
+                if (!is_persistent) {
+                    aerospike_destroy(as_ref_p->as_p);
+                    as_ref_p->as_p = NULL;
+                    free(as_ref_p);
+                }
             }
+            as_ref_p = NULL;
         }
-        as_ref_p = NULL;
     }
 
     /*
@@ -234,15 +243,14 @@ namespace HPHP {
             if (AEROSPIKE_OK == policy_manager.set_config_policies(options,
                         error)) {
                 if (AEROSPIKE_OK == data->configure_connection(config, error)) {
-                    if (data->as_ref_p->ref_php_object <= 1) {
+                    if (data->as_ref_p->ref_php_object <= 1 && data->as_ref_p->as_p) {
                         if (AEROSPIKE_OK == aerospike_connect(data->as_ref_p->as_p,
                                     &error)) {
                             data->is_connected = true;
                         } else {
                             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                                     "Unable to connect to server");
-                            aerospike_destroy(data->as_ref_p->as_p);
-                            data->as_ref_p->as_p = NULL;
+                            data->as_ref_p->ref_php_object--;
                         }
                     }
                 }
@@ -334,14 +342,24 @@ namespace HPHP {
                 }
             } else {
                 /*
-                 * Decrements ref_php_object which indicates the no. of
-                 * references for internal CSDK aerospike object being held by
-                 * the various PHP userland functions.
+                 * Cluster is valid or not this condition will
+                 * indicate whether connect was successful or not
+                 * on that connection incase of persistent connection.
                  */
-                pthread_rwlock_wrlock(&connection_mutex);
-                data->as_ref_p->ref_php_object++;
-                pthread_rwlock_unlock(&connection_mutex);
-                data->is_connected = true;
+                if (data->as_ref_p->as_p->cluster) {
+                    /*
+                     * Decrements ref_php_object which indicates the no. of
+                     * references for internal CSDK aerospike object being held by
+                     * the various PHP userland functions.
+                     */
+                    pthread_rwlock_wrlock(&connection_mutex);
+                    data->as_ref_p->ref_php_object++;
+                    pthread_rwlock_unlock(&connection_mutex);
+                    data->is_connected = true;
+                } else {
+                    as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                            "Trying to connect invalid persistent connection");
+                }
             }
         }
 
