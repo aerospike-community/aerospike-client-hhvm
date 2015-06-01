@@ -58,8 +58,7 @@ if (isset($args['a']) || isset($args['annotate'])) display_code(__FILE__, $start
 echo colorize("Writing a record in test.characters with PK=1234 ≻", 'black', true);
 $start = __LINE__;
 $digest = $db->getKeyDigest("test", "characters", 1234);
-//$key = $db->initKey("test", "characters", $digest, true);
-$key = $db->initKey("test", "characters", 1234);
+$key = $db->initKey("test", "characters", $digest, true);
 $put_vals = array("email" => "freudian.circuits@hal-inst.org", "name" => "Perceptron");
 $status = $db->put($key, $put_vals);
 if ($status == Aerospike::OK) {

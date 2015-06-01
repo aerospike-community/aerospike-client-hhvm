@@ -754,12 +754,7 @@ namespace HPHP {
 
         as_error_init(&error);
 
-        Array php_key = Array::Create();
-        php_key.set(s_ns, ns.toString());
-        php_key.set(s_set, set.toString());
-        php_key.set(s_key, primary_key);
-
-        get_digest_from_php_key(php_key, key, &digest_p, error);
+        get_digest_from_key(key, ns, set, primary_key, &digest_p, error);
 
         if (error.code == AEROSPIKE_OK) {
             as_key_destroy(&key);
