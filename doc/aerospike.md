@@ -1,6 +1,6 @@
 
 # The Aerospike class
-The Aerospike PHP client API may be described as follows:
+The Aerospike HHVM client API may be described as follows:
 
 ## Introduction
 
@@ -42,30 +42,12 @@ class Aerospike
     const POLICY_COMMIT_LEVEL_ALL;    // return success after committing all replicas (default)
     const POLICY_COMMIT_LEVEL_MASTER; // return success after committing the master replica
 
-    // Determines a handler for writing values of unsupported type into bins
-    // Set OPT_SERIALIZER to one of the following:
-    const SERIALIZER_NONE;
-    const SERIALIZER_PHP; // default handler
-    const SERIALIZER_JSON;
-    const SERIALIZER_USER;
-
-    // OPT_SCAN_PRIORITY can be set to one of the following:
-    const SCAN_PRIORITY_AUTO;   //The cluster will auto adjust the scan priority
-    const SCAN_PRIORITY_LOW;    //Low priority scan.
-    const SCAN_PRIORITY_MEDIUM; //Medium priority scan.
-    const SCAN_PRIORITY_HIGH;   //High priority scan.
-
     // Options can be assigned values that modify default behavior
     const OPT_CONNECT_TIMEOUT;    // value in milliseconds, default: 1000
     const OPT_READ_TIMEOUT;       // value in milliseconds, default: 1000
     const OPT_WRITE_TIMEOUT;      // value in milliseconds, default: 1000
     const OPT_POLICY_RETRY;       // set to a Aerospike::POLICY_RETRY_* value
     const OPT_POLICY_EXISTS;      // set to a Aerospike::POLICY_EXISTS_* value
-    const OPT_SERIALIZER;         // set the unsupported type handler
-    const OPT_SCAN_PRIORITY;      // set to a Aerospike::SCAN_PRIORITY_* value
-    const OPT_SCAN_PERCENTAGE;    // integer value 1-100, default: 100
-    const OPT_SCAN_CONCURRENTLY;  // boolean value, default: false
-    const OPT_SCAN_NOBINS;        // boolean value, default: false
     const OPT_POLICY_KEY;         // records store the digest unique ID, optionally also its (ns,set,key) inputs
     const OPT_POLICY_GEN;         // set to array( Aerospike::POLICY_GEN_* [, $gen_value ] )
     const OPT_POLICY_REPLICA;     // set to one of Aerospike::POLICY_REPLICA_*
@@ -110,30 +92,6 @@ class Aerospike
     const ERR_BIN_NOT_FOUND      ;
     const ERR_BIN_EXISTS         ; // Bin already exists
     const ERR_BIN_INCOMPATIBLE_TYPE;
-    // Query and Scan operations:
-    const ERR_SCAN_ABORTED       ; // Scan aborted by the user
-    const ERR_QUERY              ; // Generic query error
-    const ERR_QUERY_END          ; // Out of records to query
-    const ERR_QUERY_ABORTED      ; // Query aborted by the user
-    const ERR_QUERY_QUEUE_FULL   ;
-    // Index operations:
-    const ERR_INDEX              ; // Generic secondary index error
-    const ERR_INDEX_OOM          ; // Index out of memory
-    const ERR_INDEX_NOT_FOUND    ;
-    const ERR_INDEX_FOUND        ;
-    const ERR_INDEX_NOT_READABLE ;
-    const ERR_INDEX_NAME_MAXLEN  ;
-    const ERR_INDEX_MAXCOUNT     ; // Max number of indexes reached
-    // UDF operations:
-    const ERR_UDF                ; // Generic UDF error
-    const ERR_UDF_NOT_FOUND      ; // UDF does not exist
-    const ERR_LUA_FILE_NOT_FOUND ; // Source file for the module not found
-
-    // Status values returned by scanInfo()
-    const SCAN_STATUS_UNDEF;      // Scan status is undefined.
-    const SCAN_STATUS_INPROGRESS; // Scan is currently running.
-    const SCAN_STATUS_ABORTED;    // Scan was aborted due to failure or the user.
-    const SCAN_STATUS_COMPLETED;  // Scan completed successfully.
 
     // Logger
     const LOG_LEVEL_OFF  ;
@@ -143,10 +101,6 @@ class Aerospike
     const LOG_LEVEL_DEBUG;
     const LOG_LEVEL_TRACE;
 
-    // Query Predicate Operators
-    const string OP_EQ = '=';
-    const string OP_BETWEEN = 'BETWEEN';
-
     // Multi-operation operators map to the C client
     //  src/include/aerospike/as_operations.h
     const OPERATOR_WRITE;
@@ -155,14 +109,6 @@ class Aerospike
     const OPERATOR_PREPEND;
     const OPERATOR_APPEND;
     const OPERATOR_TOUCH;
-
-    // UDF types
-    const UDF_TYPE_LUA;
-
-    // bin types
-    const INDEX_TYPE_STRING;
-    const INDEX_TYPE_INTEGER;
-
 
     // lifecycle and connection methods
     public __construct ( array $config [,  boolean $persistent_connection = true [, array $options]] )
@@ -192,43 +138,9 @@ class Aerospike
     public int prepend ( array $key, string $bin, string $value [, array $options ] )
     public int operate ( array $key, array $operations [, array &$returned ] )
 
-    // unsupported type handler methods
-    // TBD
-    public static setSerializer ( callback $serialize_cb )
-    public static setDeserializer ( callback $unserialize_cb )
-
     // batch operation methods
     public int getMany ( array $keys, array &$records [, array $filter [, array $options]] )
     public int existsMany ( array $keys, array &$metadata [, array $options ] )
-
-    // UDF methods
-    // TBD
-    public int register ( string $path, string $module [, int $language = Aerospike::UDF_TYPE_LUA] )
-    public int deregister ( string $module )
-    public int listRegistered ( array &$modules [, int $language ] )
-    public int getRegistered ( string $module, string &$code )
-    public int apply ( array $key, string $module, string $function[, array $args [, mixed &$returned [, array $options ]]] )
-    public int aggregate ( string $ns, string $set, array $where, string $module, string $function, array $args, mixed &$returned [, array $options ] )
-    public int scanApply ( string $ns, string $set, string $module, string $function, array $args, int &$scan_id [, array $options ] )
-    public int scanInfo ( integer $scan_id, array &$info [, array $options ] )
-
-    // query and scan methods
-    // TBD
-    public int query ( string $ns, string $set, array $where, callback $record_cb [, array $select [, array $options ]] )
-    public int scan ( string $ns, string $set, callback $record_cb [, array $select [, array $options ]] )
-    public array predicateEquals ( string $bin, int|string $val )
-    public array predicateBetween ( string $bin, int $min, int $max )
-
-    // admin methods
-    // TBD
-    public int createIndex ( string $ns, string $set, string $bin, int $type, string $name [, array $options ] )
-    public int dropIndex ( string $ns, string $name [, array $options ] )
-
-    // info methods
-    // TBD
-    public int info ( string $request, string &$response [, array $host [, array options ] ] )
-    public array infoMany ( string $request [, array $config [, array options ]] )
-    public array getNodes ( void )
 }
 ```
 

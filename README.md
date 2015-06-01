@@ -1,7 +1,9 @@
 # Aerospike HHVM Client
-This is a prototype of [HHVM Native Interface](https://github.com/facebook/hhvm/wiki/Extension-API) for Aerospike Client.
+This is a prototype of an Aerospike client implemented as a
+[HHVM Native Interface](https://github.com/facebook/hhvm/wiki/Extension-API)
+extension.
 
-Currently tested on Ubuntu 14.04 LTS 64 bit
+Currently tested on 64-bit Ubuntu 14.04 LTS.
 
 ## Install HHVM
 The HHVM manual provides [installation](http://docs.hhvm.com/manual/en/install-intro.install.php)
@@ -47,4 +49,4 @@ Add the extension to HHVM by editing /etc/hhvm/php.ini as follows:
     hhvm.extensions[] = /path/to/aerospike-hhvm.so
 
 ## Test
-Run the unit tests as described in [tests/README](tests/README.md)
+Run the unit tests as described in the tests section [README](src/aerospike/tests/README.md).

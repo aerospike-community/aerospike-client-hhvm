@@ -2,7 +2,7 @@
 # Overview
 
 The Aerospike <a href="http://www.aerospike.com/docs/architecture/clients.html"
-target="_doc">PHP client</a> enables your PHP application to work with an
+target="_doc">HHVM client</a> enables your PHP application to work with an
 <a href="http://www.aerospike.com/docs/architecture/distribution.html"
 target="_doc">Aerospike cluster</a> as its
 <a href="http://www.aerospike.com/docs/guide/kvs.html" target="_doc">key-value store</a>.
@@ -11,7 +11,11 @@ The <a href="http://www.aerospike.com/docs/architecture/data-model.html" target=
 document gives further details on how data is organized in the cluster.
 
 ## Client API
-The Aerospike PHP client API is described in the following sections:
+The Aerospike client for HHVM will eventually implement the full API
+described in the 
+[aerospike/aerospike-client-php](https://github.com/aerospike/aerospike-client-php/blob/master/doc/README.md)
+repository. Currently a subset of the API has been implemented by the HNI
+extension.
 
 ### [Runtime Configuration](aerospike_config.md)
 ### [Aerospike Class](aerospike.md)
@@ -22,10 +26,6 @@ The Aerospike PHP client API is described in the following sections:
 ## Implementation Status
 So far the *Runtime Configuration*, *Lifecycle and Connection Methods*, *Error*
 *Handling and Logging Methods*, and *Key-Value Methods* have been implemented.
-
-We expect the specification of the PHP client to closely describe our next
-release, including the unimplemented methods.  However, it is possible that
-some changes to the client spec will occur.
 
 ## Persistent Connections
 
@@ -41,6 +41,11 @@ extension will attempt to reuse the persistent connection.
 When persistent connections are used the methods _reconnect()_ and _close()_ do
 not actually close the connection.  Those methods only apply to instances of
 class Aerospike which use non-persistent connections.
+
+## Handling Unsupported Types
+The HHVM client does not yet handle types such as float, boolean and object.
+In a future release it will behave similar to the way the
+[PHP client does](https://github.com/aerospike/aerospike-client-php/blob/master/doc/README.md#handling-unsupported-types).
 
 ## Further Reading
 
