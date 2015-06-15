@@ -159,6 +159,15 @@ namespace HPHP {
         as_config_init(&config);
         check_and_configure_shm(config);
 
+        if (!php_config[s_user].isNull() && !php_config[s_user].isNull()) {
+            const char* username = php_config[s_user].toString().c_str();
+            const char* password = php_config[s_pass].toString().c_str();
+
+            if (!as_config_set_user(&config, username, password)) {
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unable to set username and password");
+            }
+        }
+
         if (IniSetting::Get("aerospike.udf.lua_system_path", ini_value)) {
             strcpy(config.lua.system_path, ini_value.c_str());
         }
