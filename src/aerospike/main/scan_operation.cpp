@@ -35,12 +35,17 @@ namespace HPHP {
 
         Array php_record = Array::Create();
         php_record.append(temp_php_record);
-        vm_call_user_func(conversion_data_p->function, php_record);
+        Variant ret = vm_call_user_func(conversion_data_p->function, php_record);
+
+        bool do_continue = true;
+        if (ret.isBoolean() && ret.toBoolean() == false) {
+            do_continue = false;
+        }
 
         as_record_destroy(record_p);
         pthread_rwlock_unlock(&scan_callback_mutex);
 
-        return true;
+        return do_continue;
     }
 
     /*
