@@ -48,6 +48,8 @@ namespace HPHP {
     const StaticString s_hosts("hosts");
     const StaticString s_addr("addr");
     const StaticString s_port("port");
+    const StaticString s_user("user");
+    const StaticString s_pass("pass");
     const StaticString s_ns("ns");
     const StaticString s_set("set");
     const StaticString s_key("key");
