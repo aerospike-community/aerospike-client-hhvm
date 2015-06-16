@@ -3,10 +3,14 @@
 #include "hphp/runtime/vm/native-data.h"
 #include "conversions.h"
 #include "helper.h"
-#include "constants.h"
+#include "class_constants.h"
 #include "ext_aerospike.h"
 #include "policy.h"
 #include "batch_op_manager.h"
+
+#include "hphp/runtime/base/builtin-functions.h"
+#include "aerospike/as_bytes.h"
+#include "hphp/runtime/vm/vm-regs.h"
 
 namespace HPHP {
 
@@ -225,14 +229,15 @@ namespace HPHP {
         as_error_init(&error);
 
         data->is_persistent = persistent_connection;
+        data->serializer_value = SERIALIZER_PHP;
 
         if (data->as_ref_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Connection already exists!");
         } else if (AEROSPIKE_OK == php_config_to_as_config(php_config,
                     config, error)) {
-            if (AEROSPIKE_OK == policy_manager.set_config_policies(options,
-                        error)) {
+            if (AEROSPIKE_OK == policy_manager.set_global_defaults(&data->serializer_value,
+                        options, error)) {
                 if (AEROSPIKE_OK == data->configure_connection(config, error)) {
                     if (data->as_ref_p->ref_php_object <= 1) {
                         if (AEROSPIKE_OK == aerospike_connect(data->as_ref_p->as_p,
@@ -365,6 +370,7 @@ namespace HPHP {
         StaticPoolManager   static_pool;
         as_policy_write     write_policy;
         bool                key_initialized = false;
+        int16_t             serializer_option = 0;
         PolicyManager       policy_manager(&write_policy, "write",
                 &data->as_ref_p->as_p->config);
 
@@ -378,9 +384,10 @@ namespace HPHP {
                     "put: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == php_record_to_as_record(php_rec, rec, ttl,
-                        static_pool, error)) {
-                if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
+            if (AEROSPIKE_OK == policy_manager.set_policy(&serializer_option,
+                        data->serializer_value, options, error)) {
+                if (AEROSPIKE_OK == php_record_to_as_record(php_rec, rec,
+                            ttl, static_pool, serializer_option, error)) {
                     policy_manager.set_generation_value(&rec.gen, options,
                             error);
                     aerospike_key_put(data->as_ref_p->as_p, &error,
@@ -389,7 +396,7 @@ namespace HPHP {
                 }
             }
         }
-        
+
         if (key_initialized) {
             as_key_destroy(&key);
         }
@@ -415,6 +422,7 @@ namespace HPHP {
         PolicyManager       policy_manager(&read_policy, "read",
                 &data->as_ref_p->as_p->config);
 
+
         if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
@@ -423,7 +431,8 @@ namespace HPHP {
                     "get: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value,
+                        options, error)) {
                 if (!filter_bins.isNull() && !filter_bins.isArray()) {
                     as_error_update(&error, AEROSPIKE_ERR_PARAM,
                             "Filter bins must be of type an Array");
@@ -438,8 +447,7 @@ namespace HPHP {
                     }
                     Array temp_php_rec = Array::Create();
                     if (status == AEROSPIKE_OK) {
-                        as_record_to_php_record(rec_p, &key, temp_php_rec,
-                                &read_policy.key, error);
+                        as_record_to_php_record(rec_p, &key, temp_php_rec, &read_policy.key, error);
                     }
                     php_rec = temp_php_rec;
                     as_record_destroy(rec_p);
@@ -480,8 +488,8 @@ namespace HPHP {
         } else {
             try {
                 BatchOpManager batch_op_manager(php_keys);
-                if (AEROSPIKE_OK == policy_manager.set_policy(options,
-                            error)) {
+                if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                            data->serializer_value, options, error)) {
                     batch_op_manager.execute_batch_get(data->as_ref_p->as_p,
                             php_records, filter_bins, batch_policy, error);
                 }
@@ -511,6 +519,7 @@ namespace HPHP {
         as_operations       operations;
         as_record           *rec_p = NULL;
         as_policy_operate   operate_policy;
+        int16_t             serializer_option = 0;
         bool                key_initialized = false;
         PolicyManager       policy_manager(&operate_policy, "operate",
                 &data->as_ref_p->as_p->config);
@@ -525,9 +534,10 @@ namespace HPHP {
                     "operate: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == php_operations_to_as_operations(php_operations,
-                        operations, static_pool, error)) {
-                if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
+            if (AEROSPIKE_OK == policy_manager.set_policy(&serializer_option,
+                        data->serializer_value, options, error)) {
+                if (AEROSPIKE_OK == php_operations_to_as_operations(php_operations,
+                            operations, static_pool, serializer_option, error)) {
                     policy_manager.set_generation_value(&operations.gen,
                             options, error);
                     as_record_init(rec_p, 0);
@@ -576,7 +586,7 @@ namespace HPHP {
                     "remove: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value, options, error)) {
                 policy_manager.set_generation_value(&remove_policy.generation,
                         options, error);
                 aerospike_key_remove(data->as_ref_p->as_p, &error,
@@ -618,7 +628,7 @@ namespace HPHP {
                     "removeBin: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value, options, error)) {
                 as_record_inita(&record, bins.size());
                 policy_manager.set_generation_value(&record.gen,
                         options, error);
@@ -664,7 +674,7 @@ namespace HPHP {
                     "exists: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value, options, error)) {
                 if (AEROSPIKE_OK == aerospike_key_exists(data->as_ref_p->as_p,
                             &error, &read_policy, &key, &record_p)) {
                     Array php_metadata = Array::Create();
@@ -707,8 +717,8 @@ namespace HPHP {
         } else {
             try {
                 BatchOpManager batch_op_manager(php_keys);
-                if (AEROSPIKE_OK == policy_manager.set_policy(options,
-                            error)) {
+                if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                            data->serializer_value, options, error)) {
                     batch_op_manager.execute_batch_exists(data->as_ref_p->as_p,
                             metadata, batch_policy, error);
                 }
@@ -812,6 +822,9 @@ namespace HPHP {
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
                         "aerospike.key_policy",
                         "0", &ini_entry.key_policy);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
+                        "aerospike.serializer_type",
+                        "1", &ini_entry.serializer_type);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
                         "aerospike.nesting_depth",
                         "3", &ini_entry.nesting_depth);

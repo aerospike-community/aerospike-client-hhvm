@@ -25,6 +25,7 @@ namespace HPHP {
         int64_t     read_timeout;
         int64_t     write_timeout;
         int64_t     key_policy;
+        int16_t     serializer_type;
         int64_t     nesting_depth;
         std::string log_level;
         std::string log_path;
@@ -64,6 +65,7 @@ namespace HPHP {
             as_config *config_p;
             void initialize_policy();
             as_status copy_INI_entries_to_config(as_error& error);
+            as_status set_config_policies(const Variant& options, as_error& error);
         public:
             PolicyManager()
             {
@@ -74,8 +76,8 @@ namespace HPHP {
 
             PolicyManager(as_config *config_p);
             PolicyManager(void *policy_holder, char *policy_type, as_config *config_p);
-            as_status set_policy(const Variant& options, as_error& error);
-            as_status set_config_policies(const Variant& options, as_error& error);
+            as_status set_policy(int16_t *serializer_value, int16_t global_serializer_val, const Variant& options, as_error& error);
+            as_status set_global_defaults(int16_t *serializer_value, const Variant& options, as_error& error);
             as_status set_generation_value(uint16_t *gen_value, const Variant& options, as_error& error);
 
 /*
