@@ -114,12 +114,15 @@ namespace HPHP {
      * @param args              List of arguments to the above defined function
      * @param static_pool       StaticPoolManager instance reference, to be used for
      *                          the conversion lifecycle
+     * @param serializer_type   The serializer type to be used to support
+     *                          server-unsupported datatypes for the UDF's
+     *                          argument list.
      * @param error             as_error reference to be populated by this function
      *                          in case of error
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status initialize_scanApply(as_scan *scan, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, as_error &error)
+    as_status initialize_scanApply(as_scan *scan, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error)
     {
         as_list     *args_list = NULL;
         Array       php_args;
@@ -142,7 +145,7 @@ namespace HPHP {
             if (!args.isNull()) {
                 php_args = args.toArray();
             }
-            if (!args.isNull() && php_list_to_as_list(php_args, &args_list, static_pool, error)) {
+            if (!args.isNull() && php_list_to_as_list(php_args, &args_list, static_pool, serializer_type, error)) {
                 //Argument list creation for UDF failed
             } else if (!as_scan_apply_each(scan, module.toString().c_str(), function.toString().c_str(), args_list)) {
                 as_error_update(&error, AEROSPIKE_ERR_PARAM,

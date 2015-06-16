@@ -5,7 +5,5 @@ Get Map containig List of bools with PHP serializer.
 <?php
 include dirname(__FILE__)."/../../astestframework/astest-phpt-loader.inc";
 aerospike_phpt_runtest("Get", "testGetMapListBoolsWithPHPSerializer");
---XFAIL--
-Fails because serializer support is not present.
 --EXPECT--
 OK

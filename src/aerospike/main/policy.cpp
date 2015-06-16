@@ -162,7 +162,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status PolicyManager::set_policy(const Variant& options_variant, as_error& error) {
+    as_status PolicyManager::set_policy(int16_t *serializer_value, int16_t global_serializer_val,const Variant& options_variant, as_error& error) {
         as_error_reset(&error);
 
         if (!this->type || !this->policy_holder) {
@@ -217,6 +217,16 @@ namespace HPHP {
                 if (options.exists(OPT_POLICY_COMMIT_LEVEL) && options[OPT_POLICY_COMMIT_LEVEL].isInteger()) {
                     POLICY_SET_FIELD(write, commit_level, options[OPT_POLICY_COMMIT_LEVEL].toInt32(), as_policy_commit_level);
                 }
+                if (serializer_value) {
+                    *serializer_value = global_serializer_val;
+                    if (options.exists(OPT_SERIALIZER) && options[OPT_SERIALIZER].isInteger()) {
+                        *serializer_value = options[OPT_SERIALIZER].toInt16();
+                    }
+                }
+            } else {
+                if (serializer_value) {
+                    *serializer_value = global_serializer_val;
+                }
             }
         } else if (strcmp(this->type, "operate") == 0) {
             as_policy_operate_copy(&(this->config_p->policies.operate), CURRENT_POLICY(operate));
@@ -244,6 +254,16 @@ namespace HPHP {
                 }
                 if (options.exists(OPT_POLICY_COMMIT_LEVEL) && options[OPT_POLICY_COMMIT_LEVEL].isInteger()) {
                     POLICY_SET_FIELD(operate, commit_level, options[OPT_POLICY_COMMIT_LEVEL].toInt32(), as_policy_commit_level);
+                }
+                if (serializer_value) {
+                    *serializer_value = global_serializer_val;
+                    if (options.exists(OPT_SERIALIZER) && options[OPT_SERIALIZER].isInteger()) {
+                        *serializer_value = options[OPT_SERIALIZER].toInt16();
+                    }
+                }
+            } else {
+                if (serializer_value) {
+                    *serializer_value = global_serializer_val;
                 }
             }
         } else if (strcmp(this->type, "remove") == 0) {
@@ -382,6 +402,39 @@ namespace HPHP {
             }
             if (options.exists(OPT_POLICY_COMMIT_LEVEL) && options[OPT_POLICY_COMMIT_LEVEL].isInteger()) {
                 this->config_p->policies.commit_level = (as_policy_commit_level) options[OPT_POLICY_COMMIT_LEVEL].toInt32();
+            }
+        }
+
+        return error.code;
+    }
+
+    /*
+     *******************************************************************************************
+     * Function for setting global default policies.
+     *
+     * @param serializer_value      The class level serializer value to be set
+     *                              by this function
+     * @param options_variant       The user's optional policy options to be used if set
+     * @param error_p               as_error reference to be populated by this function
+     *                              in case of error
+     *
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
+    as_status PolicyManager::set_global_defaults(int16_t *serializer_value, const Variant& options_variant, as_error& error)
+    {
+        Array  options = options_variant.toArray();
+        std::string ini_value;
+
+        as_error_reset(&error);
+
+        if (AEROSPIKE_OK == set_config_policies(options_variant, error)) {
+            if (IniSetting::Get("aerospike.serializer_type", ini_value)) {
+                *serializer_value = atoi(ini_value.c_str());
+            }
+
+            if (options.exists(OPT_SERIALIZER) && options[OPT_SERIALIZER].isInteger()) {
+                *serializer_value = options[OPT_SERIALIZER].toInt16();
             }
         }
 

@@ -31,7 +31,7 @@ namespace HPHP {
     class StaticPoolManager;
     extern bool scan_callback(const as_val * val_p, void * udata);
     extern as_status initialize_scan(as_scan *scan, const Variant &ns, const Variant &set, const Variant &bins, as_error &error);
-    extern as_status initialize_scanApply(as_scan *scan, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, as_error &error);
+    extern as_status initialize_scanApply(as_scan *scan, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error);
 
     /*
      ************************************************************************************

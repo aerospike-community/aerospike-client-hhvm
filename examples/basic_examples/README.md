@@ -7,7 +7,7 @@ remove(), touch(), exists(), and put() with various policy options set
 identifying a record using its digest (the server's hash of the key) is given.
 
 ```bash
-php rec-operations.php --host=192.168.119.3 -a -c
+hhvm rec-operations.php --host=192.168.119.3 -a -c
 ```
 
 ### Bin Operations
@@ -17,7 +17,7 @@ example of multi-ops, which allows for multiple bin operations to be executed at
 once on a record.
 
 ```bash
-php bin-operations.php --host=192.168.119.3 -a -c
+hhvm bin-operations.php --host=192.168.119.3 -a -c
 ```
 
 ### Batch Operations
@@ -26,5 +26,5 @@ getMany() and existsMany() that retrieve multiple records or their metadata
 based on an array of keys.
 
 ```bash
-php batch-operations.php --host=192.168.119.3 -a -c
+hhvm batch-operations.php --host=192.168.119.3 -a -c
 ```

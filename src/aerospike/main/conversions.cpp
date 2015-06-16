@@ -1,5 +1,6 @@
 #include "conversions.h"
 #include "ext_aerospike.h"
+#include "constants.h"
 
 namespace HPHP {
 
@@ -79,6 +80,21 @@ namespace HPHP {
 
     /*
      *******************************************************************************************
+     * Method to get an as_bytes from current static pool
+     *
+     * @return a pointer to as_bytes if success. Otherwise NULL.
+     *******************************************************************************************
+     */
+    as_bytes* StaticPoolManager::get_as_bytes()
+    {
+        if (bytes_pool_index >= STATIC_POOL_MAX_SIZE) {
+            return NULL;
+        }
+        return &bytes_pool[bytes_pool_index++];
+    }
+
+    /*
+     *******************************************************************************************
      * Destructor for Static Pool
      * Frees up all the used as_* from the static pool
      *******************************************************************************************
@@ -98,6 +114,131 @@ namespace HPHP {
         for (iter = 0; iter < map_pool_index; iter++) {
             as_hashmap_destroy(&map_pool[iter]);
         }
+    }
+
+    /*
+     *******************************************************************************************************
+     * Sets value of as_bytes with bytes from bytes_string.
+     * Sets type of as_bytes to bytes_type.
+     *
+     * @param bytes_p               The C client's as_bytes to be set.
+     * @param serialized_string     The bytes string to be set into as_bytes.
+     * @param bytes_type            The type of as_bytes to be set.
+     * @param error                 The as_error to be populated by the function
+     *                              with encountered error if any.
+     *******************************************************************************************************
+     */
+    as_status set_as_bytes(as_bytes **bytes_p, HPHP::String serialized_string, int32_t bytes_type,
+            as_error& error)
+    {
+        as_error_reset(&error);
+
+        if (!bytes_p || !(*bytes_p) || !serialized_string) {
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Unable to set as_bytes");
+        }
+        if (!as_bytes_init(*bytes_p, serialized_string.size())) {
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Unable to initialize as_bytes");
+        }
+        if (!as_bytes_set(*bytes_p, 0, (uint8_t *) serialized_string.data(),
+                serialized_string.size())) {
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Unable to set raw bytes into the as_bytes");
+        }
+        as_bytes_set_type(*bytes_p, (as_bytes_type) bytes_type);
+
+        return error.code;
+    }
+
+    /*
+     *******************************************************************************************************
+     * Serializes data (value_to_serialize) into as_bytes using serialization logic
+     * based on serializer_policy.
+     *
+     * @param serializer_type           The serializer_policy to be used to handle
+     *                                  the serialization.
+     * @param bytes_p                   The as_bytes to be set.
+     * @param value_to_serialize        The value to be serialized.
+     * @param error                     The as_error to be populated by the function
+     *                                  with encountered error if any.
+     *******************************************************************************************************
+     */
+    as_status serialize_based_on_serializer_policy(int16_t serializer_type, as_bytes **bytes_p,
+            const Variant& value_to_serialize, StaticPoolManager& static_pool, as_error& error)
+    {
+        HPHP::String serialized_string;
+
+        as_error_reset(&error);
+
+        switch(serializer_type) {
+            case SERIALIZER_NONE:
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Cannot serialize : SERIALIZER_NONE selected");
+                break;
+            case SERIALIZER_PHP:
+                serialized_string = f_serialize(value_to_serialize);
+                *bytes_p = static_pool.get_as_bytes();
+                if (!serialized_string || serialized_string.size() == 0) {
+                    return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                            "Unable to serialize using standard PHP serializer");
+                }
+                set_as_bytes(bytes_p, serialized_string, AS_BYTES_PHP, error);
+                break;
+            case SERIALIZER_JSON:
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Unable to serialize using standard JSON serializer");
+                break;
+            case SERIALIZER_USER:
+                /* TBD */
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Unable to serialize using user serializer");
+                break;
+            default:
+                as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unsupported serializer");
+        }
+
+        return error.code;
+    }
+
+    /*
+     *******************************************************************************************************
+     * Unserializes as_bytes into Variant (php_value) using unserialization logic
+     * based on as_bytes->type.
+     *
+     * @param bytes_p               The as_bytes to be deserialized.
+     * @param php_value             The PHP Variant reference that is to be populated with the
+     *                              deserialized value of the input as_bytes.
+     * @param error                 The as_error to be populated by the function
+     *                              with encountered error if any.
+     *******************************************************************************************************
+     */
+    as_status unserialize_based_on_as_bytes_type(as_bytes *bytes_p, Variant &php_value, as_error& error)
+    {
+        as_error_reset(&error);
+
+        if (!bytes_p || !bytes_p->value) {
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Invalid bytes");
+        }
+
+        switch (as_bytes_get_type(bytes_p)) {
+            case AS_BYTES_PHP:
+                {
+                    Variant pval = unserialize_ex((char *) bytes_p->value, bytes_p->size,VariableUnserializer::Type::Serialize);
+                    php_value = pval;
+                }
+                break;
+            case AS_BYTES_BLOB:
+                {
+                    as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                            "Unable to unserialize bytes using user deserializer");
+                }
+                break;
+            default:
+                as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unable to unserialize bytes");
+        }
+        return error.code;
     }
 
     /*
@@ -314,7 +455,8 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status php_variant_to_as_val(const Variant& php_variant, as_val **val_pp, StaticPoolManager& static_pool, as_error& error)
+    as_status php_variant_to_as_val(const Variant& php_variant, as_val **val_pp, StaticPoolManager& static_pool,
+            int16_t serializer_type, as_error& error)
     {
         as_error_reset(&error);
 
@@ -341,21 +483,27 @@ namespace HPHP {
             if (is_assoc(php_array)) {
                 /* Handle map */
                 as_map *map_p = NULL;
-                if (AEROSPIKE_OK != php_map_to_as_map(php_array, &map_p, static_pool, error)) {
+                if (AEROSPIKE_OK != php_map_to_as_map(php_array, &map_p, static_pool,
+                            serializer_type, error)) {
                     return error.code;
                 }
                 *val_pp = (as_val *) map_p;
             } else {
                 /* Handle list */
                 as_list *list_p = NULL;
-                if (AEROSPIKE_OK != php_list_to_as_list(php_array, &list_p, static_pool, error)) {
+                if (AEROSPIKE_OK != php_list_to_as_list(php_array, &list_p, static_pool,
+                            serializer_type, error)) {
                     return error.code;
                 }
                 *val_pp = (as_val *) list_p;
             }
         } else {
-            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                    "Unsupported type of value");
+            as_bytes *bytes = NULL;
+            if (AEROSPIKE_OK != serialize_based_on_serializer_policy(serializer_type,
+                        &bytes, php_variant, static_pool, error)) {
+                return error.code;
+            }
+            *val_pp = (as_val *) bytes;
         }
         return error.code;
     }
@@ -373,7 +521,8 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status php_list_to_as_list(const Array& php_list, as_list **list_pp, StaticPoolManager& static_pool, as_error& error)
+    as_status php_list_to_as_list(const Array& php_list, as_list **list_pp, StaticPoolManager& static_pool,
+            int16_t serializer_type, as_error& error)
     {
         as_error_reset(&error);
 
@@ -393,7 +542,8 @@ namespace HPHP {
         for (ArrayIter iter(php_list); iter; ++iter) {
             Variant php_value = iter.second();
             as_val *val_p = NULL;
-            if (AEROSPIKE_OK != php_variant_to_as_val(php_value, &val_p, static_pool, error)) {
+            if (AEROSPIKE_OK != php_variant_to_as_val(php_value, &val_p, static_pool,
+                        serializer_type, error)) {
                 break;
             }
             as_list_append(*list_pp, val_p);
@@ -415,7 +565,8 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status php_map_to_as_map(const Array& php_map, as_map **map_pp, StaticPoolManager& static_pool, as_error& error)
+    as_status php_map_to_as_map(const Array& php_map, as_map **map_pp, StaticPoolManager& static_pool,
+            int16_t serializer_type, as_error& error)
     {
         as_error_reset(&error);
 
@@ -435,12 +586,14 @@ namespace HPHP {
         for (ArrayIter iter(php_map); iter; ++iter) {
             Variant php_key = iter.first();
             as_val *key_p = NULL;
-            if (AEROSPIKE_OK != php_variant_to_as_val(php_key, &key_p, static_pool, error)) {
+            if (AEROSPIKE_OK != php_variant_to_as_val(php_key, &key_p, static_pool, serializer_type,
+                        error)) {
                 break;
             }
             Variant php_value = iter.second();
             as_val *val_p = NULL;
-            if (AEROSPIKE_OK != php_variant_to_as_val(php_value, &val_p, static_pool, error)) {
+            if (AEROSPIKE_OK != php_variant_to_as_val(php_value, &val_p, static_pool, serializer_type,
+                        error)) {
                 if (key_p) {
                     as_val_destroy(key_p);
                 }
@@ -465,7 +618,8 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status php_record_to_as_record(const Array& php_record, as_record& record, int64_t ttl, StaticPoolManager& static_pool, as_error& error)
+    as_status php_record_to_as_record(const Array& php_record, as_record& record, int64_t ttl,
+            StaticPoolManager& static_pool, int16_t serializer_type, as_error& error)
     {
         const char      *bin_name_p = NULL;
 
@@ -501,7 +655,8 @@ namespace HPHP {
                 if (is_assoc(php_array)) {
                     /* Handle map */
                     as_map *map_p = NULL;
-                    if (AEROSPIKE_OK != php_map_to_as_map(php_array, &map_p, static_pool, error)) {
+                    if (AEROSPIKE_OK != php_map_to_as_map(php_array, &map_p, static_pool,
+                                serializer_type, error)) {
                         break;
                     }
                     if (!as_record_set_map(&record, bin_name_p, map_p)) {
@@ -511,7 +666,8 @@ namespace HPHP {
                 } else {
                     /* Handle list */
                     as_list *list_p = NULL;
-                    if (AEROSPIKE_OK != php_list_to_as_list(php_array, &list_p, static_pool, error)) {
+                    if (AEROSPIKE_OK != php_list_to_as_list(php_array, &list_p, static_pool,
+                                serializer_type, error)) {
                         break;
                     }
                     if (!as_record_set_list(&record, bin_name_p, list_p)) {
@@ -520,8 +676,19 @@ namespace HPHP {
                     }
                 }
             } else {
-                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                    "Unsupported type of value for the record");
+                /*
+                 * Depending on the type of serializer
+                 * invoke appropriate function.
+                 */
+                as_bytes *bytes = NULL;
+                if (AEROSPIKE_OK != serialize_based_on_serializer_policy(serializer_type,
+                            &bytes, value, static_pool, error)) {
+                    break;
+                }
+                if (!as_record_set_bytes(&record, bin_name_p, bytes)) {
+                    return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                            "Unable to set bytes within the record");
+                }
             }
         }
 
@@ -529,7 +696,8 @@ namespace HPHP {
         return error.code;
     }
 
-    static as_status set_operation(as_operations& operations, int32_t& op, const char *bin_p, Variant& val, StaticPoolManager& static_pool, Variant& metadata, as_error& error)
+    static as_status set_operation(as_operations& operations, int32_t& op, const char *bin_p, Variant& val, StaticPoolManager& static_pool, Variant& metadata,
+            int16_t serializer_type, as_error& error)
     {
         switch (op) {
             case AS_OPERATOR_APPEND:
@@ -629,7 +797,8 @@ namespace HPHP {
                     }
                     
                     as_val *write_value_p = NULL;
-                    if (AEROSPIKE_OK != php_variant_to_as_val(val, &write_value_p, static_pool, error)) {
+                    if (AEROSPIKE_OK != php_variant_to_as_val(val, &write_value_p, static_pool,
+                                serializer_type, error)) {
                         return error.code;
                     }
 
@@ -650,7 +819,8 @@ namespace HPHP {
         return error.code;
     }
 
-    static as_status set_php_operation_within_as_operations(as_operations& operations, const Array &php_operation, StaticPoolManager& static_pool, as_error& error)
+    static as_status set_php_operation_within_as_operations(as_operations& operations, const Array &php_operation, StaticPoolManager& static_pool,
+            int16_t serializer_type, as_error& error)
     {
         int32_t op = 0;
         const char *bin_p = NULL;
@@ -687,12 +857,13 @@ namespace HPHP {
                 "Invalid operation: expecting an associative array (op, bin, value)");
         }
 
-        set_operation(operations, op, bin_p, val, static_pool, metadata, error);
+        set_operation(operations, op, bin_p, val, static_pool, metadata, serializer_type, error);
 
         return error.code;
     }
 
-    as_status php_operations_to_as_operations(const Array& php_operations, as_operations& operations, StaticPoolManager& static_pool, as_error& error)
+    as_status php_operations_to_as_operations(const Array& php_operations, as_operations& operations, StaticPoolManager& static_pool,
+            int16_t serializer_type, as_error& error)
     {
         as_error_reset(&error);
 
@@ -703,7 +874,8 @@ namespace HPHP {
             if (!php_operation.isArray()) {
                 return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Expecting each operation to be an array"); 
-            } else if (AEROSPIKE_OK != set_php_operation_within_as_operations(operations, php_operation.toArray(), static_pool, error)) {
+            } else if (AEROSPIKE_OK != set_php_operation_within_as_operations(operations, php_operation.toArray(), static_pool,
+                        serializer_type, error)) {
                 break;
             }
         }
@@ -864,7 +1036,8 @@ namespace HPHP {
                 }
             case AS_BYTES:
                 {
-                    /* TBD */
+                    unserialize_based_on_as_bytes_type((as_bytes *) value_p,
+                            php_value, error);
                     break;
                 }
             case AS_LIST:
@@ -918,6 +1091,7 @@ namespace HPHP {
         }
 
         foreach_callback_udata *conversion_data_p = (foreach_callback_udata *) udata_p;
+
         Variant php_value;
         if (AEROSPIKE_OK != as_val_to_php_variant(value_p, php_value, conversion_data_p->error)) {
             return false;
@@ -1076,4 +1250,3 @@ namespace HPHP {
         return error.code;
     }
 } // namespace HPHP
-

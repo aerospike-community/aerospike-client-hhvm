@@ -63,6 +63,7 @@ $put_vals = [
     "title" => "Professor",
     "name" => "Hubert J. Farnsworth",
     "age" => 150,
+    "is_senior" => true,
     "positions" => ["Inventor", "Founder", "Lecturer", "Scientist", "Hyper Yeti"]];
 $status = $db->put($key, $put_vals, 300, [Aerospike::OPT_POLICY_EXISTS => Aerospike::POLICY_EXISTS_CREATE]);
 if ($status == Aerospike::OK) {

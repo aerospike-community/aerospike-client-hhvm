@@ -11,6 +11,8 @@ extern "C" {
 #include "stdlib.h"
 }
 
+#include "constants.h"
+
 namespace HPHP {
 #define MAX_PORT_SIZE 6
 
@@ -80,6 +82,7 @@ namespace HPHP {
             aerospike_ref *as_ref_p{nullptr};
             bool is_connected = false;
             bool is_persistent = false;
+            int16_t serializer_value = SERIALIZER_PHP;
             as_error latest_error;
             pthread_rwlock_t latest_error_mutex;
 
