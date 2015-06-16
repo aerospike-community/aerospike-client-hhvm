@@ -99,5 +99,13 @@ namespace HPHP {
 #define POLICY_SET_FIELD(type, field, value, typecast) \
             CURRENT_POLICY(type)->field = (typecast) value
     };
+
+    /*
+     *******************************************************************************************
+     * Declaration of function to set scan policies which are not part of the
+     * as_policy_scan or as_policy_info
+     *******************************************************************************************
+     */
+    extern as_status set_scan_policies(as_scan *scan, const Variant& options_variant, as_error& error);
 }
 #endif /* end of __POLICY_H__ */

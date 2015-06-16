@@ -7,6 +7,7 @@
 #include "ext_aerospike.h"
 #include "policy.h"
 #include "batch_op_manager.h"
+#include "scan_operation.h"
 
 namespace HPHP {
 
@@ -15,6 +16,7 @@ namespace HPHP {
      */
     std::unordered_map<std::string, aerospike_ref *> persistent_list;
     pthread_rwlock_t connection_mutex;
+    pthread_rwlock_t scan_callback_mutex;
 
 	ini_entries ini_entry;
     /*
@@ -750,6 +752,150 @@ namespace HPHP {
     }
     /* }}} */
 
+    /* {{{ proto int Aerospike::scan( string ns, string set, callback record_cb * [, array select [, array options ]] )
+       Returns all the records in a set to a callback method  */
+    int64_t HHVM_METHOD(Aerospike, scan, const Variant &ns, const Variant &set, const Variant &function, const Variant &bins, const Variant &options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_scan             scan;
+        as_policy_scan      scan_policy;
+        bool                scan_initialized = false;
+        PolicyManager       policy_manager(&scan_policy, "scan",
+                &data->as_ref_p->as_p->config);
+
+        foreach_callback_user_udata      udata(function, error);
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "get: connection not established");
+        } else if (!function.isObject()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Parameter 3 must be a function object");
+        } else if(AEROSPIKE_OK == initialize_scan(&scan, ns, set, bins, error)) {
+            scan_initialized = true;
+            if (AEROSPIKE_OK == policy_manager.set_policy(options, error) &&
+                    AEROSPIKE_OK == set_scan_policies(&scan, options, error)) {
+                aerospike_scan_foreach(data->as_ref_p->as_p, &error, &scan_policy, &scan, scan_callback, &udata);
+            }
+        }
+
+        if (scan_initialized) {
+            as_scan_destroy(&scan);
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        return error.code;
+    }
+    /* }}} */
+
+    /* {{{ proto int Aerospike::scanApply( string ns, string set, string module, * string function, array args, int &scan_id [, array options ] )
+       Applies a record UDF to each record of a set using a background scan  */
+    int64_t HHVM_METHOD(Aerospike, scanApply, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, VRefParam scan_id, const Variant &options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_scan             scan;
+        uint64_t            _scan_id = 0;
+        StaticPoolManager   static_pool;
+        as_policy_scan      scan_policy;
+        as_policy_info      info_policy;
+        bool                scan_initialized = false;
+        bool                is_wait = true;
+        PolicyManager       policy_manager_scan(&scan_policy, "scan",
+                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager_info(&info_policy, "info",
+                &data->as_ref_p->as_p->config);
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "get: connection not established");
+        /*} else if (scan_id.isNull()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "scan_id argument is invalid");*/
+        } else if(AEROSPIKE_OK == initialize_scanApply(&scan, ns, set, module, function, args, static_pool, error)) {
+            scan_initialized = true;
+            if (AEROSPIKE_OK == policy_manager_scan.set_policy(options, error) &&
+                    AEROSPIKE_OK == set_scan_policies(&scan, options, error)) {
+                if (AEROSPIKE_OK == aerospike_scan_background(data->as_ref_p->as_p, &error, &scan_policy, &scan, &_scan_id)) {
+                    scan_id = (int64_t)_scan_id;
+                    //Background scan started, now we can check the status
+                    if (is_wait && AEROSPIKE_OK == policy_manager_scan.set_policy(options, error)) {
+                        aerospike_scan_wait(data->as_ref_p->as_p, &error, &info_policy, _scan_id, 0);
+                    }
+                }
+            }
+        }
+
+        if (scan_initialized) {
+            as_scan_destroy(&scan);
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        return error.code;
+    }
+    /* }}} */
+
+    /* {{{ proto int Aerospike::scanInfo ( int scan_id, array &info [, array $options ] )
+       Gets the status of a background scan triggered by scanApply()  */
+    int64_t HHVM_METHOD(Aerospike, scanInfo, const Variant &scan_id, VRefParam scan_info, const Variant &options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_scan_info        _scan_info;
+        uint64_t            _scan_id = 0;
+        as_policy_info      info_policy;
+        PolicyManager       policy_manager(&info_policy, "info",
+                &data->as_ref_p->as_p->config);
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "get: connection not established");
+        } else if (!scan_id.isNull() && !scan_id.isInteger()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "scan_id argument is invalid");
+        } else if (AEROSPIKE_OK == policy_manager.set_policy(options, error)) {
+            if (!scan_id.isNull()) {
+                _scan_id = scan_id.toInt64();
+            }
+            if (AEROSPIKE_OK == aerospike_scan_info(data->as_ref_p->as_p, &error, &info_policy, _scan_id, &_scan_info)) {
+                Array php_scan_info = Array::Create();
+                php_scan_info.set(s_progress_pct, (int64_t)_scan_info.progress_pct);
+                php_scan_info.set(s_records_scanned, (int64_t)_scan_info.records_scanned);
+                php_scan_info.set(s_status, (int64_t)_scan_info.status);
+                scan_info = php_scan_info;
+            }
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        return error.code;
+    }
+    /* }}} */
+
     /* {{{ proto string Aerospike::error ( void )
        Displays the error message associated with the last operation */
     int64_t HHVM_METHOD(Aerospike, errorno)
@@ -798,6 +944,9 @@ namespace HPHP {
                 HHVM_ME(Aerospike, exists);
                 HHVM_ME(Aerospike, existsMany);
                 HHVM_ME(Aerospike, getKeyDigest);
+                HHVM_ME(Aerospike, scan);
+                HHVM_ME(Aerospike, scanApply);
+                HHVM_ME(Aerospike, scanInfo);
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
@@ -843,6 +992,8 @@ namespace HPHP {
                         &ini_entry.shm_takeover_threshold_sec);
                 Native::registerNativeDataInfo<Aerospike>(s_Aerospike.get());
                 pthread_rwlock_init(&connection_mutex, NULL);
+                pthread_rwlock_init(&scan_callback_mutex, NULL);
+
                 loadSystemlib();
             }
 
