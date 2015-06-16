@@ -6,7 +6,7 @@ record streamed from the server as it is scans the _users_ set of the _test_
 namespace.
 
 ```bash
-php standard.php --host=192.168.119.3 -a -c
+hhvm standard.php --host=192.168.119.3 -a -c
 ```
 
 ### Buffering Results With a Limit
@@ -15,7 +15,7 @@ buffered into a _$result_ array, with the scan halted by returning `false` once
 a predetermined limit is reached.
 
 ```bash
-php buffered.php --host=192.168.119.3 -a -c
+hhvm buffered.php --host=192.168.119.3 -a -c
 ```
 
 ### Scan Applying a UDF in the Background
@@ -27,5 +27,5 @@ After checking the scan info to see whether it has completed, the transformed
 records are displayed.
 
 ```bash
-php background.php --host=192.168.119.3 -a -c
+hhvm background.php --host=192.168.119.3 -a -c
 ```
