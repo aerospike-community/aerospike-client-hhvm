@@ -159,7 +159,8 @@ namespace HPHP {
         as_config_init(&config);
         check_and_configure_shm(config);
 
-        if (!php_config[s_user].isNull() && !php_config[s_user].isNull()) {
+        if (php_config.exists(s_user) && php_config.exists(s_pass) &&
+                !php_config[s_user].isNull() && !php_config[s_pass].isNull()) {
             const char* username = php_config[s_user].toString().c_str();
             const char* password = php_config[s_pass].toString().c_str();
 
