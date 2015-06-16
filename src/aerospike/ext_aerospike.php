@@ -28,6 +28,12 @@ class Aerospike {
     <<__Native>>
         public function getKeyDigest(mixed $ns, mixed $set, mixed $key): string;
     <<__Native>>
+        public function scan(mixed $ns, mixed $set, mixed $function, mixed $bins = NULL, mixed $options = NULL): int;
+    <<__Native>>
+        public function scanApply(mixed $ns, mixed $set, mixed $module, mixed $function, mixed $args, mixed &$scan_id, mixed $options = NULL): int;
+    <<__Native>>
+        public function scanInfo(mixed $scan_id, mixed &$scan_info, mixed $options = NULL): int;
+    <<__Native>>
         public function errorno(): int;
     <<__Native>>
         public function error(): string;
