@@ -86,6 +86,12 @@ namespace HPHP {
             as_error latest_error;
             pthread_rwlock_t latest_error_mutex;
 
+            //static ObjectData* serializer;
+            static Variant serializer;
+            static Variant deserializer;
+            static int is_serializer_registered;
+            static int is_deserializer_registered;
+
             Aerospike();
             void sweep();
             ~Aerospike();

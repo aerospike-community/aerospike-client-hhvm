@@ -23,6 +23,15 @@ namespace HPHP {
     pthread_rwlock_t scan_callback_mutex;
 
 	ini_entries ini_entry;
+
+    /*
+     * Static member's definition
+     */
+    Variant Aerospike::serializer = 0;
+    Variant Aerospike::deserializer = 0;
+    int Aerospike::is_serializer_registered = 0;
+    int Aerospike::is_deserializer_registered = 0;
+
     /*
      ************************************************************************************
      * Definitions of Member functions of Class Aerospike declared in
@@ -374,6 +383,62 @@ namespace HPHP {
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);
         return error.code;
+    }
+    /* }}} */
+
+    /* {{{ proto static Aerospike::setSerializer( callback serialize_cb )
+       Sets a userland method as responsible for serializing bin values */
+    bool HHVM_STATIC_METHOD(Aerospike, setSerializer, const Variant& callback)
+    { 
+        as_error            error;
+
+        as_error_init(&error);
+
+        if (!callback.isObject() && !callback.isString()) {
+            /*as_error_update(&error, AEROSPIKE_ERR_PARAM,
+             * "Callback should be valid");
+             */
+            return false;
+        }
+
+        /*
+         * Check if same callback is already registered or not
+         */
+        /*if (Aerospike::serializer.toObject().get() == callback.toObject().get()) {
+            return true;
+        }*/
+
+        Aerospike::serializer = callback;
+        Aerospike::is_serializer_registered = 1;
+
+        return true;
+
+    }
+    /* }}} */
+
+    /* {{{ proto static Aerospike::setDeserializer( callback unserialize_cb )
+       Sets a userland method as responsible for deserializing bin values */
+    bool HHVM_STATIC_METHOD(Aerospike, setDeserializer, const Variant& callback)
+    {
+        as_error            error;
+
+        as_error_init(&error);
+
+        if (!callback.isObject() && !callback.isString()) {
+            /*as_error_update(&error, AEROSPIKE_ERR_PARAM,
+             * "Callback should be valid");
+             */
+            return false;
+        }
+
+        /*if (Aerospike::deserializer.toObject().get() == callback.toObject().get()) {
+            return true;
+        }*/
+
+        Aerospike::deserializer = callback;
+        Aerospike::is_deserializer_registered = 1;
+
+        return true;
     }
     /* }}} */
 
@@ -979,6 +1044,8 @@ namespace HPHP {
                 HHVM_ME(Aerospike, scanInfo);
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
+                HHVM_STATIC_ME(Aerospike, setSerializer);
+                HHVM_STATIC_ME(Aerospike, setDeserializer);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
                         "aerospike.connect_timeout",
                         "1000", &ini_entry.connect_timeout);
