@@ -34,6 +34,10 @@ class Aerospike {
     <<__Native>>
         public function scanInfo(mixed $scan_id, mixed &$scan_info, mixed $options = NULL): int;
     <<__Native>>
+        public function register(mixed $path, mixed $module, mixed $language = Aerospike::UDF_TYPE_LUA, mixed $options = NULL): int;
+    <<__Native>>
+        public function deregister(mixed $module, mixed $options = NULL): int;
+    <<__Native>>
         public function errorno(): int;
     <<__Native>>
         public function error(): string;

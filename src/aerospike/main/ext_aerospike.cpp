@@ -8,6 +8,7 @@
 #include "policy.h"
 #include "batch_op_manager.h"
 #include "scan_operation.h"
+#include "udf_operations.h"
 
 #include "hphp/runtime/base/builtin-functions.h"
 #include "aerospike/as_bytes.h"
@@ -926,6 +927,75 @@ namespace HPHP {
     }
     /* }}} */
 
+    /*
+     * UDF API's
+     */
+    /* {{{ proto int Aerospike::register( String path, String module [, int language = Aerospike::UDF_TYPE_LUA [, array options]] )
+       Registers a UDF module with the Aerospike cluster */
+    int64_t HHVM_METHOD(Aerospike, register, const Variant& lua_path, const Variant& lua_module,
+            const Variant& language, const Variant& options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_policy_info      info_policy;
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "Register : Connection not established");
+        } else {
+            PolicyManager policy_manager(&info_policy, "info", &data->as_ref_p->as_p->config);
+
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
+                register_udf_module(data->as_ref_p->as_p, lua_path, lua_module, language, &info_policy, error);
+            }
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        return error.code;
+    }
+    /* }}} */
+
+    /* {{{ proto int Aerospike::deregister( String module [, array options]] )
+       Remloves a UDF module from the Aerospike cluster */
+    int64_t HHVM_METHOD(Aerospike, deregister, const Variant& lua_module, const Variant& options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_policy_info      info_policy;
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "Deregister : Connection not established");
+        } else {
+            PolicyManager policy_manager(&info_policy, "info", &data->as_ref_p->as_p->config);
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
+                remove_udf_module(data->as_ref_p->as_p, lua_module, &info_policy, error);
+            }
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        return error.code;
+    }
+    /* }}} */
+
     /* {{{ proto string Aerospike::error ( void )
        Displays the error message associated with the last operation */
     int64_t HHVM_METHOD(Aerospike, errorno)
@@ -977,6 +1047,8 @@ namespace HPHP {
                 HHVM_ME(Aerospike, scan);
                 HHVM_ME(Aerospike, scanApply);
                 HHVM_ME(Aerospike, scanInfo);
+                HHVM_ME(Aerospike, register);
+                HHVM_ME(Aerospike, deregister);
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
@@ -1018,11 +1090,12 @@ namespace HPHP {
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
                         "aerospike.udf.lua_system_path",
                         "/opt/aerospike/client-php/sys-lua",
-                        &ini_entry.shm_takeover_threshold_sec);
+                        &ini_entry.lua_system_path);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
                         "aerospike.udf.lua_user_path",
-                        "/opt/aerospike/client-php/user-lua",
-                        &ini_entry.shm_takeover_threshold_sec);
+                        "/opt/aerospike/client-php/usr-lua",
+                        &ini_entry.lua_user_path);
+
                 Native::registerNativeDataInfo<Aerospike>(s_Aerospike.get());
                 pthread_rwlock_init(&connection_mutex, NULL);
                 pthread_rwlock_init(&scan_callback_mutex, NULL);
