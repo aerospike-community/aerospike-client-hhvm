@@ -8,8 +8,8 @@ namespace HPHP {
      *
      * @param as_P                  The aerospike pointer for the current
      *                              opeartion
-     * @param lua_path              The path to the lua file
-     * @param lua_module            The lua module to be registered with Aeropsike
+     * @param path                  The path to the UDF module
+     * @param module                The UDF module to be registered with Aeropsike
      *                              cluster
      * @param udf_content_p         The UDF contents to be writtenn to the DB
      * @param error                 as_error reference to be populated by this function
@@ -18,7 +18,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status read_udf_file_contents(aerospike *as_p, const Variant& lua_path, as_bytes* udf_content_p, as_error& error)
+    as_status read_udf_file_contents(aerospike *as_p, const Variant& path, as_bytes* udf_content_p, as_error& error)
     {
         FILE *udf_file_path = NULL;
         uint8_t* bytes_p = NULL;
@@ -30,7 +30,7 @@ namespace HPHP {
         
         as_error_reset(&error);
         
-        const char* file_path = lua_path.toString().c_str();
+        const char* file_path = path.toString().c_str();
         udf_file_path = fopen(file_path, "r");
         if (!udf_file_path) {
             as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND,
@@ -105,8 +105,8 @@ namespace HPHP {
      * Function to register a udf module with the Aerospike cluster
      *
      * @param as_p                  Aerospike pointer to be used by this operation
-     * @param lua_path              The path to the lua file
-     * @param lua_module            The lua module to be registered with Aeropsike
+     * @param path                  The path to the lua file
+     * @param module                The lua module to be registered with Aeropsike
      *                              cluster
      * @param language              The UDF type to be registered
      * @param info_policy_p         The as_policy_info to be used for this
@@ -117,7 +117,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status register_udf_module(aerospike *as_p, const Variant& lua_path, const Variant& lua_module,
+    as_status register_udf_module(aerospike *as_p, const Variant& path, const Variant& module,
             const Variant& language, as_policy_info *info_policy_p, as_error& error)
     {
         as_bytes udf_content;
@@ -125,14 +125,16 @@ namespace HPHP {
 
         as_error_reset(&error);
 
-        if (!lua_path.isString() || !lua_module.isString()) {
-            as_error_update(&error, AEROSPIKE_ERR_PARAM, "Lua path/Lua module should be of type string");
+        if (!path.isString() || !module.isString()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM, "UDF path/module should be of type string");
+        } else if (path.toString().length() == 0 || module.toString().length() == 0) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM, "UDF path/module should not be empty string");
         } else if (!language.isInteger()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM, "Invalid language type");
         } else {
             udf_content_p = &udf_content;
-            if (AEROSPIKE_OK == read_udf_file_contents(as_p, lua_path, &udf_content, error)) {
-                const char* module_p = lua_module.toString().c_str();
+            if (AEROSPIKE_OK == read_udf_file_contents(as_p, path, &udf_content, error)) {
+                const char* module_p = module.toString().c_str();
                 
                 if (AEROSPIKE_OK == aerospike_udf_put(as_p, &error, info_policy_p, module_p,
                             (as_udf_type) language.toInt32(), udf_content_p)) {
@@ -154,7 +156,7 @@ namespace HPHP {
      * Function to remove a udf module from the Aerospike cluster
      *
      * @param as_p                  Aerospike pointer to be used by this operation
-     * @param lua_module            The lua module to be registered with Aeropsike
+     * @param module                The lua module to be registered with Aeropsike
      *                              cluster
      * @param info_policy_p         The as_policy_info to be used for this
      *                              operation
@@ -164,16 +166,111 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status remove_udf_module(aerospike *as_p, const Variant& lua_module, as_policy_info *info_policy_p, as_error& error)
+    as_status remove_udf_module(aerospike *as_p, const Variant& module, as_policy_info *info_policy_p, as_error& error)
     {
         as_error_reset(&error);
 
-        if (lua_module.isString()) {
-            const char* module_p = lua_module.toString().c_str();
-            aerospike_udf_remove(as_p, &error, info_policy_p, module_p);
+        if (module.isString()) {
+            if (module.toString().length() == 0) {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM, "UDF module should not be empty string");
+            } else {
+                const char* module_p = module.toString().c_str();
+                aerospike_udf_remove(as_p, &error, info_policy_p, module_p);
+            }
         } else {
             as_error_update(&error, AEROSPIKE_ERR_PARAM, "Invalid lua module type");
         }
+        return error.code;
+    }
+
+    /*
+     *******************************************************************************************
+     * Function to get the code of UDF module which is registered with the server
+     *
+     * @param as_p                  Aerospike pointer to be used by this operation
+     * @param module                The lua module to be registered with Aeropsike
+     *                              cluster
+     * @param module_code           The contents of the UDF module
+     * @param language              The UDF type to be registered
+     * @param info_policy_p         The as_policy_info to be used for this
+     *                              operation
+     * @param error                 as_error reference to be populated by this function
+     *                              in case of error
+     *
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
+    as_status get_registered_udf_module_code(aerospike *as_p, const Variant& module, VRefParam module_code, const Variant& language,
+            as_policy_info *info_policy_p, as_error& error)
+    {
+        as_error_reset(&error);
+
+        if (module.isString()) {
+            if (module.toString().length() == 0) {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM, "UDF module should not be empty string");
+            } else {
+                if (language.isInteger()) {
+                    as_udf_file udf_file;
+                    const char *module_name_p = module.toString().c_str();
+
+                    as_udf_file_init(&udf_file);
+
+                    if (AEROSPIKE_OK == aerospike_udf_get(as_p, &error, info_policy_p, module_name_p,
+                                (as_udf_type) language.toInt32(), &udf_file)) {
+                        module_code = String((char *) udf_file.content.bytes);
+                    }
+                    as_udf_file_destroy(&udf_file);
+                } else {
+                    as_error_update(&error, AEROSPIKE_ERR_PARAM, "Invalid language type");
+                }
+            }
+        } else {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM, "Invalid module type");
+        }
+        return error.code;
+    }
+
+    /*
+     *******************************************************************************************
+     * Function to list the UDF modules registered with the server
+     *
+     * @param as_p                  Aerospike pointer to be used by this operation
+     * @param modules               The UDF modules registered with Aeropsike
+     *                              cluster
+     * @param language              The UDF type to be registered
+     * @param info_policy_p         The as_policy_info to be used for this
+     *                              operation
+     * @param error                 as_error reference to be populated by this function
+     *                              in case of error
+     *
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
+    as_status list_registered_udf_modules(aerospike *as_p, Array& modules, const Variant& language,
+            as_policy_info *info_policy_p, as_error& error)
+    {
+        as_udf_files udf_files;
+
+        as_error_reset(&error);
+
+        if (language.isInteger()) {
+            as_udf_files_init(&udf_files, 0);
+            if (AEROSPIKE_OK == aerospike_udf_list(as_p, &error, info_policy_p, &udf_files)) {
+                for (int i = 0; i < udf_files.size; i++) {
+                    if (language.toInt32() != udf_files.entries[i].type) {
+                        continue;
+                    }
+                    as_udf_file *file = &udf_files.entries[i];
+                    Array file_entry = Array::Create();
+                    file_entry.set(s_udf_module_name, file->name);
+                    file_entry.set(s_udf_module_type, file->type);
+                    modules.append(file_entry);
+                }
+            }
+        } else {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM, "Invalid module type");
+        }
+
         return error.code;
     }
 }

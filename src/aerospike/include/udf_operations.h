@@ -23,7 +23,9 @@ namespace HPHP {
      * Declaration of functions in udf_operations.cpp
      *************************************************************************************************
      */
-    extern as_status register_udf_module(aerospike *as_p, const Variant&lua_path, const Variant& lua_module, const Variant& language, as_policy_info *info_policy_p, as_error& error);
-    extern as_status remove_udf_module(aerospike *as_p, const Variant& lua_module, as_policy_info *info_policy_p, as_error& error);
+    extern as_status register_udf_module(aerospike *as_p, const Variant& path, const Variant& module, const Variant& language, as_policy_info *info_policy_p, as_error& error);
+    extern as_status remove_udf_module(aerospike *as_p, const Variant& module, as_policy_info *info_policy_p, as_error& error);
+    extern as_status get_registered_udf_module_code(aerospike *as_p, const Variant& module, VRefParam module_code, const Variant& language, as_policy_info *info_policy_p, as_error& error);
+    extern as_status list_registered_udf_modules(aerospike *as_p, Array& modules, const Variant& language, as_policy_info *info_policy_p, as_error& error);
 } // namespace HPHP
 #endif /* end of __UDF_OPERATIONS_H__ */

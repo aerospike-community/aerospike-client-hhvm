@@ -932,7 +932,7 @@ namespace HPHP {
      */
     /* {{{ proto int Aerospike::register( String path, String module [, int language = Aerospike::UDF_TYPE_LUA [, array options]] )
        Registers a UDF module with the Aerospike cluster */
-    int64_t HHVM_METHOD(Aerospike, register, const Variant& lua_path, const Variant& lua_module,
+    int64_t HHVM_METHOD(Aerospike, register, const Variant& path, const Variant& module,
             const Variant& language, const Variant& options)
     {
         auto                data = Native::data<Aerospike>(this_);
@@ -952,7 +952,7 @@ namespace HPHP {
 
             if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
-                register_udf_module(data->as_ref_p->as_p, lua_path, lua_module, language, &info_policy, error);
+                register_udf_module(data->as_ref_p->as_p, path, module, language, &info_policy, error);
             }
         }
 
@@ -965,8 +965,8 @@ namespace HPHP {
     /* }}} */
 
     /* {{{ proto int Aerospike::deregister( String module [, array options]] )
-       Remloves a UDF module from the Aerospike cluster */
-    int64_t HHVM_METHOD(Aerospike, deregister, const Variant& lua_module, const Variant& options)
+       Removes a UDF module from the Aerospike cluster */
+    int64_t HHVM_METHOD(Aerospike, deregister, const Variant& module, const Variant& options)
     {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
@@ -984,7 +984,77 @@ namespace HPHP {
             PolicyManager policy_manager(&info_policy, "info", &data->as_ref_p->as_p->config);
             if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
-                remove_udf_module(data->as_ref_p->as_p, lua_module, &info_policy, error);
+                remove_udf_module(data->as_ref_p->as_p, module, &info_policy, error);
+            }
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        return error.code;
+    }
+    /* }}} */
+
+    /* {{{ proto int Aerospike::getRegistered( String module, String &$module_code [, int $language = Aerospike::UDF_TYPE_LUA [, array options]] )
+       Gets the code of the registered UDF module */
+    int64_t HHVM_METHOD(Aerospike, getRegistered, const Variant& module, VRefParam module_code,
+            const Variant& language, const Variant& options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_policy_info      info_policy;
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "getRegistered : Connection not established");
+        } else {
+            PolicyManager policy_manager(&info_policy, "info", &data->as_ref_p->as_p->config);
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value,
+                        options, error)) {
+                get_registered_udf_module_code(data->as_ref_p->as_p, module, module_code, language,
+                        &info_policy, error);
+            }
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        return error.code;
+    }
+    /* }}} */
+
+    /* {{{ proto int Aerospike::listRegistered( array &$modules [, int $language = Aerospike::UDF_TYPE_LUA [, array options]] )
+       Lists the UDF modules registered with the server */
+    int64_t HHVM_METHOD(Aerospike, listRegistered, VRefParam modules, const Variant& language, const Variant& options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_policy_info      info_policy;
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "listRegistered : Connection not established");
+        } else {
+            PolicyManager policy_manager(&info_policy, "info", &data->as_ref_p->as_p->config);
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value,
+                        options, error)) {
+                Array temp_modules = Array::Create();
+                if (AEROSPIKE_OK == list_registered_udf_modules(data->as_ref_p->as_p, temp_modules, language,
+                            &info_policy, error)) {
+                    modules = temp_modules;
+                }
             }
         }
 
@@ -1049,6 +1119,8 @@ namespace HPHP {
                 HHVM_ME(Aerospike, scanInfo);
                 HHVM_ME(Aerospike, register);
                 HHVM_ME(Aerospike, deregister);
+                HHVM_ME(Aerospike, getRegistered);
+                HHVM_ME(Aerospike, listRegistered);
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
