@@ -12,7 +12,8 @@ extern "C" {
 }
 
 namespace HPHP {
-    extern as_status get_digest_from_php_key(const Array& php_key, as_key& key,
+    extern as_status get_digest_from_key(as_key& key, const Variant& ns,
+            const Variant& set, const Variant& primary_key,
             char **digest_pp, as_error& error);
     extern as_status set_nil_bins(as_record *record_p, const Array& php_bins,
             as_error& error);

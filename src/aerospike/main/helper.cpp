@@ -4,12 +4,15 @@
 namespace HPHP {
     /*
      **********************************************************************************************
-     * Helper function to generate digest from php key.
+     * Helper function to generate digest from key using PHP userland ns, set
+     * and primary key.
      *
-     * @param php_key           PHP Array reference to the php_key to be
-     *                          converted.
      * @param key               as_key reference to be populated by the
-     *                          corresponding as_key for the php_key.
+     *                          corresponding as_key for the PHP userland ns,
+     *                          set and primary key.
+     * @param ns                The PHP Variant for ns
+     * @param set               The PHP Variant for set
+     * @param primary_key       The PHP Variant for primary_key
      * @param digest_pp         The return digest string to be populated by this
      *                          function.
      * @param error             The as_error reference to be populated by this
@@ -18,17 +21,50 @@ namespace HPHP {
      * @return AEROSPIKE_OK if SUCCESS. Otherwise AEROSPIKE_ERR_*.
      **********************************************************************************************
      */
-    as_status get_digest_from_php_key(const Array& php_key, as_key& key, char **digest_pp, as_error& error)
+    as_status get_digest_from_key(as_key& key, const Variant& ns,
+            const Variant& set, const Variant& primary_key,
+            char **digest_pp, as_error& error)
     {
+        const char      *ns_p = NULL;
+        const char      *set_p = NULL;
+
         as_error_reset(&error);
 
-        if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
-            if (as_key_digest(&key) && key.digest.init) {
-                *digest_pp = (char *) key.digest.value;
-            } else {
-                *digest_pp = NULL;
-            }
+        if (!ns.isString() && !ns.isInteger()) {
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Invalid namespace: Expecting a string");
         }
+
+        ns_p = ns.toString().c_str();
+
+        if (!set.isString() && !set.isInteger()) {
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Invalid set: Expecting a string");
+        }
+
+        set_p = set.toString().c_str();
+
+        if (primary_key.isInteger()) {
+            if (!as_key_init_int64(&key, ns_p, set_p, primary_key.toInt64())) {
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to initialize integer as_key");
+            }
+        } else if (primary_key.isString()) {
+            if (!as_key_init_str(&key, ns_p, set_p, primary_key.toString().c_str())) {
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to initialize string as_key");
+            }
+        } else {
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Invalid key: Expecting a string/integer");
+        }
+
+        if (as_key_digest(&key) && key.digest.init) {
+            *digest_pp = strndup((char *) key.digest.value, AS_DIGEST_VALUE_SIZE);
+        } else {
+            *digest_pp = NULL;
+        }
+
         return error.code;
     }
 
@@ -129,7 +165,8 @@ namespace HPHP {
         as_error_reset(&error);
 
         if (AEROSPIKE_OK == process_filter_bins(php_filter_bins, filter, error)) {
-            aerospike_key_select(as_p, &error, read_policy_p, &key, filter, record_pp);
+            aerospike_key_select(as_p, &error, read_policy_p, &key,
+                    filter, record_pp);
         }
         return error.code;
     }
