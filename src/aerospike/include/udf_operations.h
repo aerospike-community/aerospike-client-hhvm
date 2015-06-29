@@ -23,7 +23,9 @@ namespace HPHP {
      * Declaration of functions in udf_operations.cpp
      *************************************************************************************************
      */
+    class StaticPoolManager;
     extern as_status register_udf_module(aerospike *as_p, const Variant&lua_path, const Variant& lua_module, const Variant& language, as_policy_info *info_policy_p, as_error& error);
     extern as_status remove_udf_module(aerospike *as_p, const Variant& lua_module, as_policy_info *info_policy_p, as_error& error);
+    extern as_status aerospike_udf_apply(aerospike *as_p, as_key key, const Variant& lua_module, const Variant& lua_function, const Variant& lua_args, as_policy_apply *apply_policy_p, StaticPoolManager &static_pool, int16_t serializer_type, VRefParam returned_type, as_error& error);
 } // namespace HPHP
 #endif /* end of __UDF_OPERATIONS_H__ */

@@ -1,5 +1,6 @@
 #include "udf_operations.h"
 #include "ext_aerospike.h"
+#include "conversions.h"
 
 namespace HPHP {
     /*
@@ -174,6 +175,53 @@ namespace HPHP {
         } else {
             as_error_update(&error, AEROSPIKE_ERR_PARAM, "Invalid lua module type");
         }
+        return error.code;
+    }
+    /*
+     *******************************************************************************************
+     * Function to apply a UDF function
+     *
+     * @param as_p                  Aerospike pointer to be used by this operation
+     * @param key                   Key of the record the function to be applied to
+     * @param lua_module            The lua module to be registered with Aeropsike
+     *                              cluster
+     * @param info_policy_p         The as_policy_info to be used for this
+     *                              operation
+     * @param error                 as_error reference to be populated by this function
+     *                              in case of error
+     *
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
+    as_status aerospike_udf_apply(aerospike *as_p, as_key key, const Variant& lua_module, const Variant& lua_function, const Variant& lua_args, as_policy_apply *apply_policy_p, StaticPoolManager &static_pool, int16_t serializer_type, VRefParam returned_type, as_error& error)
+    {
+        as_error_reset(&error);
+        Array php_args;
+        as_val* udf_result = NULL;
+        as_list *args_list = NULL;
+
+        if (!lua_module.isString() || !lua_function.isString() || lua_module.toString().empty() || lua_function.toString().empty()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM, "Lua module/Lua function should be of type string and non-empty");
+        } 
+        //if (lua_args) {
+            if (!lua_args.isArray()) {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM, "Lua function arguments should be of type array");
+            }
+            php_args = lua_args.toArray();
+            if (!lua_args.isNull() && php_list_to_as_list(php_args, &args_list, static_pool, serializer_type, error)) {
+                //Argument list creation for UDF failed
+            }
+        //} //else {
+            const char* module_p = lua_module.toString().c_str();
+            const char* function_p = lua_function.toString().c_str();
+
+            if( AEROSPIKE_OK == aerospike_key_apply(as_p, &error, apply_policy_p, &key, module_p, function_p, args_list, &udf_result))
+            {
+                as_val_to_php_variant(udf_result, returned_type, error);
+            } else {
+                    //as_error_update(&error, error.code, error.msg);
+            }
+        //}
         return error.code;
     }
 }

@@ -966,7 +966,7 @@ namespace HPHP {
 
     /* {{{ proto int Aerospike::deregister( String module [, array options]] )
        Remloves a UDF module from the Aerospike cluster */
-    int64_t HHVM_METHOD(Aerospike, deregister, const Variant& lua_module, const Variant& options)
+   int64_t HHVM_METHOD(Aerospike, deregister, const Variant& lua_module, const Variant& options)
     {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
@@ -992,6 +992,44 @@ namespace HPHP {
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);
 
+        return error.code;
+    }
+    /* {{{ proto int Aerospike::apply( array key, String module, String function [, array args [, mixed &returned [, array options]] )
+       Registers a UDF module with the Aerospike cluster */
+    int64_t HHVM_METHOD(Aerospike, apply, const Array& php_key, const Variant& lua_module, const Variant& lua_function,
+            const Variant& args, VRefParam returned_value, const Variant& options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_key              key;
+        as_policy_apply     apply_policy;
+        int16_t             serializer_type = SERIALIZER_PHP;
+        StaticPoolManager   static_pool;
+        bool                key_initialized = false;
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "Deregister : Connection not established");
+        } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
+            key_initialized = true;
+            PolicyManager policy_manager(&apply_policy, "apply", &data->as_ref_p->as_p->config);
+            if (AEROSPIKE_OK == policy_manager.set_policy(&serializer_type,
+                        data->serializer_value, options, error)) {
+                aerospike_udf_apply(data->as_ref_p->as_p, key, lua_module, lua_function, args, &apply_policy, static_pool, serializer_type, returned_value, error);
+            }
+        }
+
+        if (key_initialized) {
+            as_key_destroy(&key);
+        }
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
         return error.code;
     }
     /* }}} */
@@ -1049,6 +1087,7 @@ namespace HPHP {
                 HHVM_ME(Aerospike, scanInfo);
                 HHVM_ME(Aerospike, register);
                 HHVM_ME(Aerospike, deregister);
+                HHVM_ME(Aerospike, apply);
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,

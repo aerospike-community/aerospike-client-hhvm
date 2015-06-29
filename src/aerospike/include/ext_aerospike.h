@@ -126,6 +126,8 @@ namespace HPHP {
     int64_t HHVM_METHOD(Aerospike, register, const Variant& lua_path, const Variant& lua_module,
             const Variant& language, const Variant& options);
     int64_t HHVM_METHOD(Aerospike, deregister, const Variant& lua_module, const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, apply, const Array& php_key, const Variant& lua_module, const Variant& lua_function,
+            const Variant& args, VRefParam returned_value, const Variant& options);
     int64_t HHVM_METHOD(Aerospike, errorno);
     String HHVM_METHOD(Aerospike, error);
 

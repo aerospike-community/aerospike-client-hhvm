@@ -38,6 +38,8 @@ class Aerospike {
     <<__Native>>
         public function deregister(mixed $module, mixed $options = NULL): int;
     <<__Native>>
+        public function apply(array $key, mixed $module, mixed $function, mixed $args = NULL, mixed &$returned = NULL, mixed $options = NULL): int;
+    <<__Native>>
         public function errorno(): int;
     <<__Native>>
         public function error(): string;
