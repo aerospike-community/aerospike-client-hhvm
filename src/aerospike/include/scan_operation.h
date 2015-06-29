@@ -11,6 +11,7 @@ extern "C" {
 #include "aerospike/as_list.h"
 #include "aerospike/as_arraylist.h"
 #include "aerospike/as_scan.h"
+#include "aerospike/as_query.h"//VISHALB
 }
 
 namespace HPHP {
@@ -32,6 +33,9 @@ namespace HPHP {
     extern bool scan_callback(const as_val * val_p, void * udata);
     extern as_status initialize_scan(as_scan *scan, const Variant &ns, const Variant &set, const Variant &bins, as_error &error);
     extern as_status initialize_scanApply(as_scan *scan, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error);
+    //VISHALB
+    extern as_status initialize_query(as_query *scan, const Variant &ns, const Variant &set, const Variant &where, const Variant &bins, as_error &error);
+    //VISHALB
 
     /*
      ************************************************************************************

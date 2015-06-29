@@ -1,6 +1,7 @@
 #include "scan_operation.h"
 #include "conversions.h"
 #include "hphp/runtime/base/builtin-functions.h"
+#include "hphp/runtime/base/program-functions.h"//VISHALB
 
 namespace HPHP {
 
@@ -28,6 +29,11 @@ namespace HPHP {
         }
 
         pthread_rwlock_wrlock(&scan_callback_mutex);
+        //VISHALB
+        if (g_context.isNull()) {
+            hphp_session_init();
+        }
+        //VISHALB
         Array           temp_php_record = Array::Create();
         foreach_callback_user_udata      *conversion_data_p = (foreach_callback_user_udata *)udata;
 
@@ -42,7 +48,6 @@ namespace HPHP {
             do_continue = false;
         }
 
-        as_record_destroy(record_p);
         pthread_rwlock_unlock(&scan_callback_mutex);
 
         return do_continue;
@@ -156,4 +161,48 @@ namespace HPHP {
         return error.code;
     }
 
+    //VISHALB
+    as_status initialize_query(as_query *query, const Variant &ns, const Variant &set, const Variant &where, const Variant &bins, as_error &error)
+    {
+        as_error_reset(&error);
+
+        if (!ns.isString() || ns.toString().empty() || !set.isString() || set.toString().empty()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Namespace/Set must be non empty string");
+        } else if (!bins.isNull() && !bins.isArray()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Bin names must be an Array");
+        } else {
+            //Initialize query structure
+            as_query_init(query, ns.toString().c_str(), set.toString().c_str());
+            //Add bins to structure if presents
+            if (!bins.isNull()) {
+                Array bin_array = bins.toArray();
+                //Initialize select bins only when argument contails bins
+                if (bin_array.length() > 0) {
+                    as_query_select_init(query, bin_array.length());
+                    for (ArrayIter iter(bin_array); iter; ++iter) {
+                        if (!iter.second().isArray()) {
+                            as_query_select(query, iter.second().toString().c_str());
+                        } else {
+                            //In case bin names are arrays currently we are ignoring
+                            //those bins
+                            continue;
+                            //For generating error for above case, enable below
+                            //error code
+                            //as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                            //        "Bin names must be an Array of Strings");
+                            //break;
+                        }
+                    }
+                }
+            }
+            if (error.code == AEROSPIKE_OK) {
+                printf("Check Where\n");
+            }
+        }
+
+        return error.code;
+    }
+    //VISHALB
 }

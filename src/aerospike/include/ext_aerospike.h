@@ -7,6 +7,7 @@ extern "C" {
 #include "aerospike/aerospike_key.h"
 #include "aerospike/as_status.h"
 #include "aerospike/aerospike_scan.h"
+#include "aerospike/aerospike_query.h"//VISHALB
 #include "pthread.h"
 #include "stdlib.h"
 }

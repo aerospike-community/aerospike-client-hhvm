@@ -317,6 +317,21 @@ namespace HPHP {
                     }
                 }
             }
+        //VISHALB
+        } else if (strcmp(this->type, "query") == 0) {
+            as_policy_query_copy(&(this->config_p->policies.query), CURRENT_POLICY(query));
+
+            if (options_variant.isArray()) {
+                Array  options = options_variant.toArray();
+                if (options.exists(OPT_READ_TIMEOUT)) {
+                    if (options[OPT_READ_TIMEOUT].isInteger()) {
+                        POLICY_SET_FIELD(query, timeout, options[OPT_READ_TIMEOUT].toInt64(), uint32_t);
+                    } else {
+                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
+                    }
+                }
+            }
+        //VISHALB
         } else if (strcmp(this->type, "info") == 0) {
             as_policy_info_copy(&(this->config_p->policies.info), CURRENT_POLICY(info));
 
