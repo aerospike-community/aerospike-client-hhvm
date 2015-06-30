@@ -40,6 +40,10 @@ class Aerospike {
     <<__Native>>
         public function apply(array $key, mixed $module, mixed $function, mixed $args = NULL, mixed &$returned = NULL, mixed $options = NULL): int;
     <<__Native>>
+        public function getRegistered(mixed $module, mixed& $code, mixed $language = Aerospike::UDF_TYPE_LUA, mixed $options = NULL): int;
+    <<__Native>>
+        public function listRegistered(mixed& $modules, mixed $language = Aerospike::UDF_TYPE_LUA, mixed $options = NULL): int;
+    <<__Native>>
         public function errorno(): int;
     <<__Native>>
         public function error(): string;

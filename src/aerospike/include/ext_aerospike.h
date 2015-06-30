@@ -67,6 +67,8 @@ namespace HPHP {
     const StaticString s_progress_pct("progress_pct");
     const StaticString s_records_scanned("records_scanned");
     const StaticString s_status("status");
+    const StaticString s_udf_module_name("name");
+    const StaticString s_udf_module_type("type");
 
     /*
      ************************************************************************************
@@ -123,9 +125,12 @@ namespace HPHP {
             VRefParam metadata, const Variant& options);
     String HHVM_METHOD(Aerospike, getKeyDigest, const Variant& ns,
             const Variant& set, const Variant& primary_key);
-    int64_t HHVM_METHOD(Aerospike, register, const Variant& lua_path, const Variant& lua_module,
+    int64_t HHVM_METHOD(Aerospike, register, const Variant& path, const Variant& module,
             const Variant& language, const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, deregister, const Variant& lua_module, const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, deregister, const Variant& module, const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, getRegistered, const Variant& module, VRefParam module_contents,
+            const Variant& language, const Variant& options);
+    int64_t HHVM_METHOD(Aerospike, listRegistered, VRefParam modules, const Variant& language, const Variant& options);
     int64_t HHVM_METHOD(Aerospike, apply, const Array& php_key, const Variant& lua_module, const Variant& lua_function,
             const Variant& args, VRefParam returned_value, const Variant& options);
     int64_t HHVM_METHOD(Aerospike, errorno);
