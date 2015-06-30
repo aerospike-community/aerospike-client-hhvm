@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run script: ./scriptname
 
-num_conn=10
+num_conn=500
 rate=10
 httperf --server localhost --port 80 --uri / --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /persistent --print-reply --num-conn $num_conn --rate $rate
@@ -18,6 +18,8 @@ httperf --server localhost --port 80 --uri /multiprepend --print-reply --num-con
 httperf --server localhost --port 80 --uri /multitouch --print-reply --num-conn $num_conn --rate $rate --method=PUT
 httperf --server localhost --port 80 --uri /removebin --print-reply --num-conn $num_conn --rate $rate --method=PUT
 httperf --server localhost --port 80 --uri /remove --print-reply --num-conn $num_conn --rate $rate --method=PUT
+httperf --server localhost --port 80 --uri /scan --print-reply --num-conn $num_conn --rate $rate
+httperf --server localhost --port 80 --uri /scanApply --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /closeconnection --print-reply --num-conn $num_conn --rate $rate --method=PUT
 httperf --server localhost --port 80 --uri /reconnect --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /getmany --print-reply --num-conn $num_conn --rate $rate

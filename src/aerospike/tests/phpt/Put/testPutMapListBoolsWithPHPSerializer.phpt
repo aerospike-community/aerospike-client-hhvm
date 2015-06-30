@@ -5,7 +5,5 @@ PUT Map containig List of bools with PHP serializer.
 <?php
 include dirname(__FILE__)."/../../astestframework/astest-phpt-loader.inc";
 aerospike_phpt_runtest("Put", "testPutMapListBoolsWithPHPSerializer");
---XFAIL--
-Fails because serialization and deserialization support is not present.
 --EXPECT--
 OK

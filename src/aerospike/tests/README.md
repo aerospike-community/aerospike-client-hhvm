@@ -16,27 +16,33 @@ The expected value for a test is the name of one of the Aerospike class
 constants, such as **OK** or **ERR_RECORD_NOT_FOUND** as listed in
 `src/aerospike/tests/astestframework/astest-phpt-loader.inc`.
 
-## Build Instructions
-
-Follow the build and installation steps described in this repository's main
-[README.md](../../../README.md) file.  Please use a standard build
-(without the **-l** flag), as a debug build will cause the tests to fail.
-
 ## Configuration:
 
-Edit the file `src/aerospike/tests/aerospike.inc` with the IP address and port
+````
+cd src/aerospike/
+cp tests/aerospike.inc tests/aerospike.local.inc
+```
+Edit the file `tests/aerospike.local.inc` with the IP address and port
 of a node in your Aerospike cluster before running the phpt scripts.
 
 ## Running Tests:
 
 To run the testcases you can set environment variable `HHVM_EXECUTABLE` with HHVM executable.
 
-    cd /path/to/aerospike-client-hhvm/src/aerospike/
-    scripts/test.sh tests/phpt
+```
+cd src/aerospike/
+scripts/test.sh tests/phpt
+```
 
 To run only the phpt test cases for Put:
+```
+scripts/test.sh tests/phpt/Put
+```
 
-    scripts/test.sh tests/phpt/Put
+### Troubleshooting
+
+Please use a standard build (without the **-l** flag), as a debug build will
+cause the tests to fail.
 
 ## Cleanup
 

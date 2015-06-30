@@ -162,7 +162,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status PolicyManager::set_policy(const Variant& options_variant, as_error& error) {
+    as_status PolicyManager::set_policy(int16_t *serializer_value, int16_t global_serializer_val,const Variant& options_variant, as_error& error) {
         as_error_reset(&error);
 
         if (!this->type || !this->policy_holder) {
@@ -217,6 +217,16 @@ namespace HPHP {
                 if (options.exists(OPT_POLICY_COMMIT_LEVEL) && options[OPT_POLICY_COMMIT_LEVEL].isInteger()) {
                     POLICY_SET_FIELD(write, commit_level, options[OPT_POLICY_COMMIT_LEVEL].toInt32(), as_policy_commit_level);
                 }
+                if (serializer_value) {
+                    *serializer_value = global_serializer_val;
+                    if (options.exists(OPT_SERIALIZER) && options[OPT_SERIALIZER].isInteger()) {
+                        *serializer_value = options[OPT_SERIALIZER].toInt16();
+                    }
+                }
+            } else {
+                if (serializer_value) {
+                    *serializer_value = global_serializer_val;
+                }
             }
         } else if (strcmp(this->type, "operate") == 0) {
             as_policy_operate_copy(&(this->config_p->policies.operate), CURRENT_POLICY(operate));
@@ -244,6 +254,16 @@ namespace HPHP {
                 }
                 if (options.exists(OPT_POLICY_COMMIT_LEVEL) && options[OPT_POLICY_COMMIT_LEVEL].isInteger()) {
                     POLICY_SET_FIELD(operate, commit_level, options[OPT_POLICY_COMMIT_LEVEL].toInt32(), as_policy_commit_level);
+                }
+                if (serializer_value) {
+                    *serializer_value = global_serializer_val;
+                    if (options.exists(OPT_SERIALIZER) && options[OPT_SERIALIZER].isInteger()) {
+                        *serializer_value = options[OPT_SERIALIZER].toInt16();
+                    }
+                }
+            } else {
+                if (serializer_value) {
+                    *serializer_value = global_serializer_val;
                 }
             }
         } else if (strcmp(this->type, "remove") == 0) {
@@ -275,6 +295,46 @@ namespace HPHP {
                 Array  options = options_variant.toArray();
                 if (options.exists(OPT_READ_TIMEOUT) && options[OPT_READ_TIMEOUT].isInteger()) {
                     POLICY_SET_FIELD(batch, timeout, options[OPT_READ_TIMEOUT].toInt32(), uint32_t);
+                }
+            }
+        } else if (strcmp(this->type, "scan") == 0) {
+            as_policy_scan_copy(&(this->config_p->policies.scan), CURRENT_POLICY(scan));
+
+            if (options_variant.isArray()) {
+                Array  options = options_variant.toArray();
+                if (options.exists(OPT_READ_TIMEOUT)) {
+                    if (options[OPT_READ_TIMEOUT].isInteger()) {
+                        POLICY_SET_FIELD(scan, timeout, options[OPT_READ_TIMEOUT].toInt64(), uint32_t);
+                    } else {
+                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
+                    }
+                }
+                if (options.exists(OPT_WRITE_TIMEOUT)) {
+                    if (options[OPT_WRITE_TIMEOUT].isInteger()) {
+                        POLICY_SET_FIELD(scan, timeout, options[OPT_WRITE_TIMEOUT].toInt64(), uint32_t);
+                    } else {
+                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_WRITE_TIMEOUT");
+                    }
+                }
+            }
+        } else if (strcmp(this->type, "info") == 0) {
+            as_policy_info_copy(&(this->config_p->policies.info), CURRENT_POLICY(info));
+
+            if (options_variant.isArray()) {
+                Array  options = options_variant.toArray();
+                if (options.exists(OPT_READ_TIMEOUT)) {
+                    if (options[OPT_READ_TIMEOUT].isInteger()) {
+                        POLICY_SET_FIELD(info, timeout, options[OPT_READ_TIMEOUT].toInt64(), uint32_t);
+                    } else {
+                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
+                    }
+                }
+                if (options.exists(OPT_WRITE_TIMEOUT)) {
+                    if (options[OPT_WRITE_TIMEOUT].isInteger()) {
+                        POLICY_SET_FIELD(info, timeout, options[OPT_WRITE_TIMEOUT].toInt64(), uint32_t);
+                    } else {
+                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
+                    }
                 }
             }
         } else {
@@ -342,6 +402,102 @@ namespace HPHP {
             }
             if (options.exists(OPT_POLICY_COMMIT_LEVEL) && options[OPT_POLICY_COMMIT_LEVEL].isInteger()) {
                 this->config_p->policies.commit_level = (as_policy_commit_level) options[OPT_POLICY_COMMIT_LEVEL].toInt32();
+            }
+        }
+
+        return error.code;
+    }
+
+    /*
+     *******************************************************************************************
+     * Function for setting global default policies.
+     *
+     * @param serializer_value      The class level serializer value to be set
+     *                              by this function
+     * @param options_variant       The user's optional policy options to be used if set
+     * @param error_p               as_error reference to be populated by this function
+     *                              in case of error
+     *
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
+    as_status PolicyManager::set_global_defaults(int16_t *serializer_value, const Variant& options_variant, as_error& error)
+    {
+        Array  options = options_variant.toArray();
+        std::string ini_value;
+
+        as_error_reset(&error);
+
+        if (AEROSPIKE_OK == set_config_policies(options_variant, error)) {
+            if (IniSetting::Get("aerospike.serializer_type", ini_value)) {
+                *serializer_value = atoi(ini_value.c_str());
+            }
+
+            if (options.exists(OPT_SERIALIZER) && options[OPT_SERIALIZER].isInteger()) {
+                *serializer_value = options[OPT_SERIALIZER].toInt16();
+            }
+        }
+
+        return error.code;
+    }
+
+    /*
+     *******************************************************************************************
+     * Function for setting scan policies defined in as_scan structure
+     *
+     * @param as_scan       An as_scan pointer
+     * @param as_scan       The user's optional policy options to be used if set
+     * @param error_p       as_error reference to be populated by this function
+     *                      in case of error
+     *
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
+    as_status set_scan_policies(as_scan *scan, const Variant& options_variant, as_error& error)
+    {
+        as_error_reset(&error);
+
+        if (!options_variant.isNull() && !options_variant.isArray()) {
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Policy options must be of type an Array");
+        }
+
+        Array   options = options_variant.toArray();
+
+        if (options.exists(OPT_SCAN_PRIORITY)) {
+            if (!options[OPT_SCAN_PRIORITY].isInteger()) {
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to set policy: Invalid Value for OPT_SCAN_PRIORITY");
+            } else if (!as_scan_set_priority(scan, (as_scan_priority)options[OPT_SCAN_PRIORITY].toInt16())) {
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to set policy: Invalid Value for OPT_SCAN_PRIORITY");
+            }
+        }
+        if (options.exists(OPT_SCAN_PERCENTAGE)) {
+            if (!options[OPT_SCAN_PERCENTAGE].isInteger()) {
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to set policy: Invalid Value for OPT_SCAN_PERCENTAGE");
+            } else if(!as_scan_set_percent(scan, (uint8_t)options[OPT_SCAN_PERCENTAGE].toInt16())) {
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to set policy: Invalid Value for OPT_SCAN_PERCENTAGE");
+            }
+        }
+        if (options.exists(OPT_SCAN_CONCURRENTLY)) {
+            if (!options[OPT_SCAN_CONCURRENTLY].isBoolean()) {
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to set policy: Invalid Value for OPT_SCAN_CONCURRENTLY");
+            } else if(!as_scan_set_concurrent(scan, (bool)options[OPT_SCAN_CONCURRENTLY].toBoolean())) {
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to set policy: Invalid Value for OPT_SCAN_CONCURRENTLY");
+            }
+        }
+        if (options.exists(OPT_SCAN_NOBINS)) {
+            if (!options[OPT_SCAN_NOBINS].isBoolean()) {
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to set policy: Invalid Value for OPT_SCAN_NOBINS");
+            } else if(!as_scan_set_nobins(scan, (bool)options[OPT_SCAN_NOBINS].toBoolean())){
+                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Unable to set policy: Invalid Value for OPT_SCAN_NOBINS");
             }
         }
 

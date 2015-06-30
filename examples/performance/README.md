@@ -40,3 +40,12 @@ chmod +x rw-concurrent.sh
 ./rw-concurrent.sh -h 192.168.119.3 -c 4 -n 50000 -w 10 run.log
 ```
 
+### Configuration
+
+Consider using shared-memory cluster tending when running the concurrent
+read-write performance test. In your `php.ini`:
+
+```
+aerospike.shm.user=true
+```
+

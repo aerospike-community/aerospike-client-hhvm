@@ -1,15 +1,15 @@
 <?php
-require '/usr/local/Slim/Slim/Slim.php';
+require '/usr/local/Slim/Slim.php';
 \Slim\Slim::registerAutoloader(); 
 
 $app = new \Slim\Slim();
 
-$config = array("hosts"=>array(array("addr"=>"10.73.80.157", "port"=>"3000")));
+$config = array("hosts"=>array(array("addr"=>"127.0.0.1", "port"=>"3000")));
 $db = new Aerospike($config);
 
 
 $app->get('/persistent', function () {
-    $config = array("hosts"=>array(array("addr"=>"10.73.80.157", "port"=>"3000")));
+    $config = array("hosts"=>array(array("addr"=>"127.0.0.1", "port"=>"3000")));
     $db = new Aerospike($config);
     if (!$db->isConnected()) {
         echo "Aerospike failed to connect[{$db->errorno()}]: {$db->error()}\n";
@@ -22,7 +22,7 @@ $app->get('/persistent', function () {
 });
 
 $app->get('/nonpersistent', function () {
-    $config = array("hosts"=>array(array("addr"=>"10.73.80.157", "port"=>"3000")));
+    $config = array("hosts"=>array(array("addr"=>"127.0.0.1", "port"=>"3000")));
     $db = new Aerospike($config, false);
     if (!$db->isConnected()) {
         echo "Aerospike failed to connect[{$db->errorno()}]: {$db->error()}\n";
@@ -207,6 +207,57 @@ $app->put('/remove', function() use($db) {
                 break;
             }
         }
+        $db->close();
+    }
+});
+
+$app->get('/scan', function() use($db) {
+    if ($db->isConnected()) {
+        for($i=1; $i<1000; $i++) {
+            $key = $db->initKey("test", "demo", "key".$i);
+            $record = array("name" => "name".$i, "age" => $i);
+            $status = $db->put($key, $record);
+            if($status != Aerospike::OK) {
+                echo "\nMultiput failed at ".$i."th record";
+                break;
+            }
+        }
+        $status = $db->scan("test", "demo", function ($record) {
+            var_dump($record);
+        });
+        if($status != Aerospike::OK) {
+            echo "Scan Failed";
+            break;
+        }
+        $db->close();
+    }
+});
+
+$app->get('/scanApply', function() use($db) {
+    if ($db->isConnected()) {
+        for($i=1; $i<1000; $i++) {
+            $key = $db->initKey("test", "demo", "key".$i);
+            $record = array("name" => "name".$i, "age" => $i);
+            $status = $db->put($key, $record);
+            if($status != Aerospike::OK) {
+                echo "\nMultiput failed at ".$i."th record";
+                break;
+            }
+        }
+
+        //scan_module.lua must be registered with function test_bin_change_name
+        $status = $db->scanApply("test", "demo", "scan_module", "test_bin_change_name", array("Aerospike", 50), $scan_id);
+        if($status != Aerospike::OK) {
+            echo "Scan Apply Failed";
+            break;
+        }
+
+        $status = $db->scanInfo($scan_id, $scan_info);
+        if($status != Aerospike::OK) {
+            echo "Scan Info Failed";
+            break;
+        }
+        var_dump($scan_info);
         $db->close();
     }
 });

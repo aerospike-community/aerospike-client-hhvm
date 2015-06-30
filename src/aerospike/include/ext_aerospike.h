@@ -6,9 +6,12 @@ extern "C" {
 #include "aerospike/as_config.h"
 #include "aerospike/aerospike_key.h"
 #include "aerospike/as_status.h"
+#include "aerospike/aerospike_scan.h"
 #include "pthread.h"
 #include "stdlib.h"
 }
+
+#include "constants.h"
 
 namespace HPHP {
 #define MAX_PORT_SIZE 6
@@ -48,6 +51,8 @@ namespace HPHP {
     const StaticString s_hosts("hosts");
     const StaticString s_addr("addr");
     const StaticString s_port("port");
+    const StaticString s_user("user");
+    const StaticString s_pass("pass");
     const StaticString s_ns("ns");
     const StaticString s_set("set");
     const StaticString s_key("key");
@@ -59,6 +64,9 @@ namespace HPHP {
     const StaticString s_op("op");
     const StaticString s_bin("bin");
     const StaticString s_val("val");
+    const StaticString s_progress_pct("progress_pct");
+    const StaticString s_records_scanned("records_scanned");
+    const StaticString s_status("status");
 
     /*
      ************************************************************************************
@@ -74,6 +82,7 @@ namespace HPHP {
             aerospike_ref *as_ref_p{nullptr};
             bool is_connected = false;
             bool is_persistent = false;
+            int16_t serializer_value = SERIALIZER_PHP;
             as_error latest_error;
             pthread_rwlock_t latest_error_mutex;
 
