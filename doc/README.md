@@ -29,8 +29,9 @@ So far the *Runtime Configuration*, *Lifecycle and Connection Methods*, *Error*
 
 We have run into a problem implementing methods which include callbacks, such as
 [scan()](https://github.com/aerospike/aerospike-client-php/blob/master/doc/aerospike_scan.md)
-and [query()](https://github.com/aerospike/aerospike-client-php/blob/master/doc/aerospike_query.md)
-trigger a segfault. Consequently, we opened [issue 5527](https://github.com/facebook/hhvm/issues/5527)
+and [query()](https://github.com/aerospike/aerospike-client-php/blob/master/doc/aerospike_query.md).
+These seem to trigger a segfault. Consequently, we opened
+[issue 5527](https://github.com/facebook/hhvm/issues/5527)
 with the HHVM github repository. The current workaround is to run HHVM with its
 JIT disabled when such a segfault is encountered (`hhvm -v Eval.Jit=0 `).
 
@@ -85,15 +86,16 @@ $client->get($key, $record);
 var_dump($record);
 $wrapped = $record['bins']['wrapped'];
 $wrapped = $wrapped->s;
+echo "wrapped binary-string: ";
 var_dump($wrapped);
 $unwrapped = $record['bins']['unwrapped'];
+echo "The binary-string that was given to put() without a wrapper: $unwrapped\n";
 echo "The binary-string that was given to put() without a wrapper: $unwrapped\n";
 
 $client->close();
 ```
 Outputs:
 ```
-Glagnar's Human Rinds, "It's a bunch'a munch'a crunch'a human!
 wrapped binary-string: string(10) "truncated"
 The binary-string that was given to put() without a wrapper: trunc
 ```
