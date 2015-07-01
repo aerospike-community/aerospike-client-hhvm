@@ -428,7 +428,7 @@ namespace HPHP {
     /* }}} */
 
     /* {{{ proto int Aerospike::addIndex( string ns, string set, string bin,
-     * string name, int index_type, int data_type)
+     * string name, int index_type, int data_type, array options)
      * Creates a secondary index on given params.
      */
     int64_t HHVM_METHOD(Aerospike, addIndex, const Variant &ns, const Variant &set, 
@@ -448,10 +448,10 @@ namespace HPHP {
         if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
-        }else if (!data->is_connected) {
+        } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "addIndex: connection not established");
-        }else if (AEROSPIKE_OK == policy_manager.set_policy(NULL, 
+        } else if (AEROSPIKE_OK == policy_manager.set_policy(NULL, 
                     data->serializer_value, options, error)){
             aerospike_status = aerospike_index_create_complex(data->as_ref_p->as_p, 
                         &error, &task, &info_policy, ns.toString().c_str(), set.toString().c_str(), 
@@ -469,7 +469,7 @@ namespace HPHP {
     }
     /* }}} */
     
-    /* {{{ proto int Aerospike::dropIndex( string ns, string name)
+    /* {{{ proto int Aerospike::dropIndex( string ns, string name, array options)
      * Removes the secodary index created.
      */
     int64_t HHVM_METHOD(Aerospike, dropIndex, const Variant &ns, const Variant &name, const Variant &options)
@@ -485,10 +485,10 @@ namespace HPHP {
         if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid aerospike connection object");
-        }else if (!data->is_connected) {
+        } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "dropIndex:: connection not established");
-        }else if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+        } else if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
                     data->serializer_value, options, error)){
             aerospike_index_remove( data->as_ref_p->as_p, 
                         &error, &info_policy,ns.toString().c_str(), name.toString().c_str());
@@ -498,8 +498,9 @@ namespace HPHP {
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);
         return error.code;
-  //      return 0;
     }
+    /* }}} */
+
     /* {{{ proto int Aerospike::get( array key, array record [, array filter [, array options]] )
        Reads a record from the cluster */
     int64_t HHVM_METHOD(Aerospike, get, const Array& php_key, VRefParam php_rec,
