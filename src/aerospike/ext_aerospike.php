@@ -14,6 +14,10 @@ class Aerospike {
     <<__Native>>
         public function get(array $key, mixed& $rec, mixed $filter = NULL, mixed $options = NULL): int;
     <<__Native>>
+        public function dropIndex(mixed $ns, mixed $name, mixed $options = NULL): int;
+    <<__Native>>
+        public function addIndex(mixed $ns, mixed $set, mixed $bin, mixed $name, mixed $index_type, mixed $data_type, mixed $options = NULL): int;
+    <<__Native>>
         public function getMany(array $keys, mixed& $records, mixed $filter = NULL, mixed $options = NULL): int;
     <<__Native>>
         public function operate(array $key, array $operations, mixed& $returned = NULL, mixed $options = NULL): int;
