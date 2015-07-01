@@ -969,38 +969,66 @@ namespace HPHP {
         return error.code;
     }
 
-    Variant HHVM_METHOD(Aerospike, predicateEquals, const Variant &bin, const Variant &value)
+    Variant HHVM_STATIC_METHOD(Aerospike, predicateEquals, const Variant &bin, const Variant &value)
     {
-        Array           where = Array::Create();
-        as_error        error;
-        bool            is_Null = false;
+        Array       where = Array::Create();
+        bool        isNull = false;
 
-        as_error_init(&error);
+        isNull = construct_Equals_Contains_Predicates(where, bin, value);
 
-        if (!bin.isString() || bin.toString().empty()) {
-            //Bin name must be non empty string
-            is_Null = true;
-        } else if (!value.isInteger() && !value.isString()) {
-            //Bin value must be integer or non empty string
-            is_Null = true;
+        if (isNull) {
+            return init_null_variant;
         } else {
-            if (value.isInteger()) {
-                //Integer Value
-                where.set(s_bin, bin.toString());
-                where.set(s_op, String("="));
-                where.set(s_val, value.toInt64());
-            } else if (value.toString().empty()) {
-                //Bin value must be integer or non empty string
-                is_Null = true;
-            } else {
-                //String Value
-                where.set(s_bin, bin.toString());
-                where.set(s_op, String("="));
-                where.set(s_val, value.toString());
-            }
+            return where;
+        }
+    }
+
+    Variant HHVM_STATIC_METHOD(Aerospike, predicateContains, const Variant &bin, const Variant &index_type, const Variant &value)
+    {
+        Array       where = Array::Create();
+        bool        isNull = false;
+
+        if (!index_type.isNull() && !index_type.isInteger()) {
+            //Index type must be integer
+            isNull = true;
+        } else {
+            isNull = construct_Equals_Contains_Predicates(where, bin, value, index_type.toInt64(), true);
         }
 
-        if (is_Null) {
+        if (isNull) {
+            return init_null_variant;
+        } else {
+            return where;
+        }
+    }
+
+    Variant HHVM_STATIC_METHOD(Aerospike, predicateBetween, const Variant &bin, const Variant &min, const Variant &max)
+    {
+        Array       where = Array::Create();
+        bool        isNull = false;
+
+        isNull = construct_Between_Range_Predicates(where, bin, min, max);
+
+        if (isNull) {
+            return init_null_variant;
+        } else {
+            return where;
+        }
+    }
+
+    Variant HHVM_STATIC_METHOD(Aerospike, predicateRange, const Variant &bin, const Variant &index_type, const Variant &min, const Variant &max)
+    {
+        Array       where = Array::Create();
+        bool        isNull = false;
+
+        if (!index_type.isNull() && !index_type.isInteger()) {
+            //Index type must be integer
+            isNull = true;
+        } else {
+            isNull = construct_Between_Range_Predicates(where, bin, min, max, index_type.toInt64(), true);
+        }
+
+        if (isNull) {
             return init_null_variant;
         } else {
             return where;
@@ -1061,7 +1089,10 @@ namespace HPHP {
                 HHVM_ME(Aerospike, scanInfo);
                 //VISHALB
                 HHVM_ME(Aerospike, query);
-                HHVM_ME(Aerospike, predicateEquals);
+                HHVM_STATIC_ME(Aerospike, predicateEquals);
+                HHVM_STATIC_ME(Aerospike, predicateContains);
+                HHVM_STATIC_ME(Aerospike, predicateBetween);
+                HHVM_STATIC_ME(Aerospike, predicateRange);
                 //VISHALB
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);

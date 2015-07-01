@@ -35,6 +35,8 @@ namespace HPHP {
     extern as_status initialize_scanApply(as_scan *scan, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error);
     //VISHALB
     extern as_status initialize_query(as_query *scan, const Variant &ns, const Variant &set, const Variant &where, const Variant &bins, as_error &error);
+    extern bool construct_Equals_Contains_Predicates(Array &where, const Variant &bin, const Variant &value, int64_t index_type = 0, bool isContains = false);
+    extern bool construct_Between_Range_Predicates(Array &where, const Variant &bin, const Variant &min, const Variant &max, int64_t index_type = 0, bool isRange = false);
     //VISHALB
 
     /*

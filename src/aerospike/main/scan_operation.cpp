@@ -1,5 +1,7 @@
 #include "scan_operation.h"
 #include "conversions.h"
+#include "ext_aerospike.h"//VISHALB
+
 #include "hphp/runtime/base/builtin-functions.h"
 #include "hphp/runtime/base/program-functions.h"//VISHALB
 
@@ -203,6 +205,66 @@ namespace HPHP {
         }
 
         return error.code;
+    }
+
+    bool construct_Equals_Contains_Predicates(Array &where, const Variant &bin, const Variant &value, int64_t index_type/* = 0*/, bool isContains/* = false*/)
+    {
+        bool        isNull = false;
+
+        if (!bin.isString() || bin.toString().empty()) {
+            //Bin name must be non empty string
+            isNull = true;
+        } else if (!value.isInteger() && !value.isString()) {
+            //Bin value must be integer or non empty string
+            isNull = true;
+        } else {
+            where.set(s_bin, bin.toString());
+            if (isContains) {
+                where.set(s_index_type, index_type);
+                where.set(s_op, String("CONTAINS"));
+            } else {
+                where.set(s_op, String("="));
+            }
+            if (value.isInteger()) {
+                //Integer Value
+                where.set(s_val, value.toInt64());
+            } else if (value.toString().empty()) {
+                //Bin value must be integer or non empty string
+                isNull = true;
+            } else {
+                //String Value
+                where.set(s_val, value.toString());
+            }
+        }
+
+        return isNull;
+    }
+
+    bool construct_Between_Range_Predicates(Array &where, const Variant &bin, const Variant &min, const Variant &max, int64_t index_type/* = 0*/, bool isRange/* = false*/)
+    {
+        Array       val = Array::Create();
+        bool        isNull = false;
+
+        if (!bin.isString() || bin.toString().empty()) {
+            //Bin name must be non empty string
+            isNull = true;
+        } else if ((!min.isNull() && !min.isInteger()) || (!max.isNull() && !max.isInteger())) {
+            //min and max must be integers
+            isNull = true;
+        } else {
+            where.set(s_bin, bin.toString());
+            if (isRange) {
+                where.set(s_index_type, index_type);
+                where.set(s_op, String("RANGE"));
+            } else {
+                where.set(s_op, String("BETWEEN"));
+            }
+            val.append(min.toInt64());
+            val.append(max.toInt64());
+            where.set(s_val, val);
+        }
+
+        return isNull;
     }
     //VISHALB
 }
