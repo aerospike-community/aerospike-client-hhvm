@@ -23,13 +23,13 @@ function parse_args() {
     $shortopts .= "a";    /* Optionally annotate output with code */
     $shortopts .= "c";    /* Optionally clean up before leaving */
 
-    $longopts  = [
+    $longopts  = array(
         "host::",         /* Optional host */
         "port::",         /* Optional port */
         "clean",          /* Optionally clean up before leaving */
         "annotate",       /* Optionally annotate output with code */
         "help",           /* Usage */
-    ];
+    );
     $options = getopt($shortopts, $longopts);
     return $options;
 }
@@ -46,7 +46,7 @@ $HOST_PORT = (isset($args["p"])) ? (integer) $args["p"] : ((isset($args["port"])
 
 echo colorize("Connecting to Aerospike ≻", 'black', true);
 $start = __LINE__;
-$config = ["hosts" => [["addr" => $HOST_ADDR, "port" => $HOST_PORT]]];
+$config = array("hosts" => array(array("addr" => $HOST_ADDR, "port" => $HOST_PORT)));
 $db = new Aerospike($config, false);
 if (!$db->isConnected()) {
     echo fail("Could not connect to host $HOST_ADDR:$HOST_PORT [{$db->errorno()}]: {$db->error()}");
@@ -59,13 +59,13 @@ echo colorize("Creating a new record in test.characters at PK=1, only if none ex
 $start = __LINE__;
 $needs_force = false;
 $key = $db->initKey("test", "characters", 1);
-$put_vals = [
+$put_vals = array(
     "title" => "Professor",
     "name" => "Hubert J. Farnsworth",
     "age" => 150,
     "is_senior" => true,
-    "positions" => ["Inventor", "Founder", "Lecturer", "Scientist", "Hyper Yeti"]];
-$status = $db->put($key, $put_vals, 300, [Aerospike::OPT_POLICY_EXISTS => Aerospike::POLICY_EXISTS_CREATE]);
+    "positions" => array("Inventor", "Founder", "Lecturer", "Scientist", "Hyper Yeti"));
+$status = $db->put($key, $put_vals, 300, array(Aerospike::OPT_POLICY_EXISTS => Aerospike::POLICY_EXISTS_CREATE));
 if ($status == Aerospike::OK) {
     echo success();
 } elseif ($status == Aerospike::ERR_RECORD_EXISTS) {
@@ -80,7 +80,7 @@ if (isset($args['a']) || isset($args['annotate'])) display_code(__FILE__, $start
 if ($needs_force) {
     echo colorize("Retrying to insert a record in test.characters at PK=1 using Aerospike::POLICY_EXISTS_IGNORE ≻", 'black', true);
     $start = __LINE__;
-    $status = $db->put($key, $put_vals, 300, [Aerospike::OPT_POLICY_EXISTS => Aerospike::POLICY_EXISTS_IGNORE]);
+    $status = $db->put($key, $put_vals, 300, array(Aerospike::OPT_POLICY_EXISTS => Aerospike::POLICY_EXISTS_IGNORE));
     if ($status == Aerospike::OK) {
         echo success();
     } else {
@@ -104,8 +104,8 @@ if (isset($args['a']) || isset($args['annotate'])) display_code(__FILE__, $start
 echo colorize("Adding a bin to the record if Aerospike::POLICY_GEN_EQ ≻", 'black', true);
 $start = __LINE__;
 $current_gen = $meta["generation"];
-$new_bin = ["eyesight"=>"bad"];
-$status = $db->put($key, $new_bin, 0, [Aerospike::OPT_POLICY_GEN=>[Aerospike::POLICY_GEN_EQ, $current_gen]]);
+$new_bin = array("eyesight"=>"bad");
+$status = $db->put($key, $new_bin, 0, array(Aerospike::OPT_POLICY_GEN=>array(Aerospike::POLICY_GEN_EQ, $current_gen)));
 if ($status == Aerospike::OK) {
     echo success();
 } elseif ($status == Aerospike::ERR_RECORD_GENERATION) {
@@ -117,14 +117,14 @@ if (isset($args['a']) || isset($args['annotate'])) display_code(__FILE__, $start
 
 echo colorize("Updating the record using Aerospike::POLICY_EXISTS_UPDATE ≻", 'black', true);
 $start = __LINE__;
-$put_vals = [
+$put_vals = array(
     "eyesight" => "bad",
     "age" => 160,
-    "locations" => [
+    "locations" => array(
         "Mars" => "Mars University",
         "Earth" => "Planet Express, New New York",
-        "Near Death Star" => "Nobody Knows!"]];
-$status = $db->put($key, $put_vals, 300, [Aerospike::OPT_POLICY_EXISTS => Aerospike::POLICY_EXISTS_UPDATE]);
+        "Near Death Star" => "Nobody Knows!"));
+$status = $db->put($key, $put_vals, 300, array(Aerospike::OPT_POLICY_EXISTS => Aerospike::POLICY_EXISTS_UPDATE));
 if ($status == Aerospike::OK) {
     echo success();
 } else {
@@ -150,6 +150,18 @@ $start = __LINE__;
 $status = $db->touch($key, 500);
 if ($status == Aerospike::OK) {
     echo success();
+} else {
+    echo standard_fail($db);
+}
+if (isset($args['a']) || isset($args['annotate'])) display_code(__FILE__, $start, __LINE__);
+
+echo colorize("Retrieving record metadata using its digest ≻", 'black', true);
+$start = __LINE__;
+$digest_key = $db->initKey($record['key']['ns'], $record['key']['set'], $record['key']['digest'], true);
+$status = $db->exists($digest_key, $metadata);
+if ($status == Aerospike::OK) {
+    echo success();
+    var_dump($metadata);
 } else {
     echo standard_fail($db);
 }
