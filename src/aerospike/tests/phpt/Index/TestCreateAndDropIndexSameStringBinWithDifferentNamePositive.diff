@@ -1,2 +1,0 @@
-001+ Fatal error: Call to undefined method Aerospike::createIndex() in /home/brusewayne/sandbox/hhvm/aerospike-client-hhvm/src/aerospike/tests/Index.inc on line 315
-001- OK
