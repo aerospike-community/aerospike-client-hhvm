@@ -232,6 +232,7 @@ namespace HPHP {
     void HHVM_METHOD(Aerospike, __construct, const Array& php_config,
             bool persistent_connection, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_config           config;
@@ -289,6 +290,7 @@ namespace HPHP {
        Closes all connections to the cluster */
     int64_t HHVM_METHOD(Aerospike, close)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
 
@@ -329,6 +331,7 @@ namespace HPHP {
        Closes then reopens all connections to the cluster */
     int64_t HHVM_METHOD(Aerospike, reconnect)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
 
@@ -383,6 +386,7 @@ namespace HPHP {
             const Array& php_rec, int64_t ttl,
             const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_key              key;
@@ -432,6 +436,7 @@ namespace HPHP {
     int64_t HHVM_METHOD(Aerospike, get, const Array& php_key, VRefParam php_rec,
             const Variant& filter_bins, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_status           status = AEROSPIKE_OK;
         as_error            error;
@@ -491,6 +496,7 @@ namespace HPHP {
             VRefParam php_records, const Variant& filter_bins,
             const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_batch     batch_policy;
@@ -532,6 +538,7 @@ namespace HPHP {
             const Array& php_operations, VRefParam returned,
             const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_key              key;
@@ -588,6 +595,7 @@ namespace HPHP {
     int64_t HHVM_METHOD(Aerospike, remove, const Array& php_key,
             const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_key              key;
@@ -629,6 +637,7 @@ namespace HPHP {
     int64_t HHVM_METHOD(Aerospike, removeBin, const Array& php_key,
             const Array& bins, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_key              key;
@@ -675,6 +684,7 @@ namespace HPHP {
     int64_t HHVM_METHOD(Aerospike, exists, const Array& php_key,
             VRefParam metadata, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_key              key;
@@ -720,6 +730,7 @@ namespace HPHP {
     int64_t HHVM_METHOD(Aerospike, existsMany, const Array& php_keys,
             VRefParam metadata, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_batch     batch_policy;
@@ -760,6 +771,7 @@ namespace HPHP {
     String HHVM_METHOD(Aerospike, getKeyDigest, const Variant& ns,
             const Variant& set, const Variant& primary_key)
     {
+        VMRegAnchor         _;
         as_error            error;
         as_key              key;
         char                *digest_p = NULL;
@@ -779,6 +791,7 @@ namespace HPHP {
        Returns all the records in a set to a callback method  */
     int64_t HHVM_METHOD(Aerospike, scan, const Variant &ns, const Variant &set, const Variant &function, const Variant &bins, const Variant &options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_scan             scan;
@@ -825,6 +838,7 @@ namespace HPHP {
        Applies a record UDF to each record of a set using a background scan  */
     int64_t HHVM_METHOD(Aerospike, scanApply, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, VRefParam scan_id, const Variant &options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_scan             scan;
@@ -885,6 +899,7 @@ namespace HPHP {
        Gets the status of a background scan triggered by scanApply()  */
     int64_t HHVM_METHOD(Aerospike, scanInfo, const Variant &scan_id, VRefParam scan_info, const Variant &options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_scan_info        _scan_info;
