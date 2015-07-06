@@ -37,6 +37,7 @@ namespace HPHP {
     extern as_status initialize_query(as_query *scan, const Variant &ns, const Variant &set, const Variant &where, const Variant &bins, as_error &error);
     extern bool construct_Equals_Contains_Predicates(Array &where, const Variant &bin, const Variant &value, int64_t index_type = 0, bool isContains = false);
     extern bool construct_Between_Range_Predicates(Array &where, const Variant &bin, const Variant &min, const Variant &max, int64_t index_type = 0, bool isRange = false);
+    extern as_status isPredicate(const Array &predicate, as_error &error);
     //VISHALB
 
     /*

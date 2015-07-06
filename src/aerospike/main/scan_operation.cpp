@@ -174,6 +174,9 @@ namespace HPHP {
         } else if (!bins.isNull() && !bins.isArray()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Bin names must be an Array");
+        } else if (!where.isArray() || where.toArray().length() == 0) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Predicate must be an Array containing the keys 'bin', ['index_type',] 'op', and 'val'");
         } else {
             //Initialize query structure
             as_query_init(query, ns.toString().c_str(), set.toString().c_str());
@@ -199,8 +202,126 @@ namespace HPHP {
                     }
                 }
             }
-            if (error.code == AEROSPIKE_OK) {
-                printf("Check Where\n");
+            Array       predicate = where.toArray();
+            //NOTE : Validation of error code is required here if select bin
+            //failure condition is enabled
+            if (error.code == AEROSPIKE_OK && isPredicate(predicate, error) == AEROSPIKE_OK) {
+                as_query_where_init(query, 1);
+                if (predicate[s_op].toString() == String("=")) {
+                    printf("Predicate =\n");
+                    if (predicate[s_val].isInteger()) {
+                        as_query_where(query, predicate[s_bin].toString().c_str(), as_integer_equals(predicate[s_val].toInt64()));
+                    //else if is not needed as is_predicate has done the
+                    //s_val value validations
+                    } else {
+                        as_query_where(query, predicate[s_bin].toString().c_str(), as_string_equals(predicate[s_val].toString().c_str()));
+                    }
+                } else if (predicate[s_op].toString() == String("CONTAINS")) {
+                    printf("Predicate CONTAINS\n");
+                    switch (predicate[s_index_type].toInt64())
+                    {
+                        case AS_INDEX_TYPE_DEFAULT:
+                            if (predicate[s_val].isInteger()) {
+                                as_query_where(query, predicate[s_bin].toString().c_str(), as_contains(DEFAULT, NUMERIC, predicate[s_val].toInt64()));
+                            } else {
+                                as_query_where(query, predicate[s_bin].toString().c_str(), as_contains(DEFAULT, STRING, predicate[s_val].toString().c_str()));
+                            }
+                            break;
+                        case AS_INDEX_TYPE_LIST:
+                            if (predicate[s_val].isInteger()) {
+                                as_query_where(query, predicate[s_bin].toString().c_str(), as_contains(LIST, NUMERIC, predicate[s_val].toInt64()));
+                            } else {
+                                as_query_where(query, predicate[s_bin].toString().c_str(), as_contains(LIST, STRING, predicate[s_val].toString().c_str()));
+                            }
+                            break;
+                        case AS_INDEX_TYPE_MAPKEYS:
+                            if (predicate[s_val].isInteger()) {
+                                as_query_where(query, predicate[s_bin].toString().c_str(), as_contains(MAPKEYS, NUMERIC, predicate[s_val].toInt64()));
+                            } else {
+                                as_query_where(query, predicate[s_bin].toString().c_str(), as_contains(MAPKEYS, STRING, predicate[s_val].toString().c_str()));
+                            }
+                            break;
+                        case AS_INDEX_TYPE_MAPVALUES:
+                            if (predicate[s_val].isInteger()) {
+                                as_query_where(query, predicate[s_bin].toString().c_str(), as_contains(MAPVALUES, NUMERIC, predicate[s_val].toInt64()));
+                            } else {
+                                as_query_where(query, predicate[s_bin].toString().c_str(), as_contains(MAPVALUES, STRING, predicate[s_val].toString().c_str()));
+                            }
+                            break;
+                        default :
+                            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                    "Predicate must be an Array : 'index_type' key value must be valid integer");
+                    }
+                } else if (predicate[s_op].toString() == String("BETWEEN")) {
+                    printf("Predicate BETWEEN\n");
+                    Array       val = predicate[s_val].toArray();
+                    as_query_where(query, predicate[s_bin].toString().c_str(), as_integer_range(val[0].toInt64(), val[1].toInt64()));
+                } else if (predicate[s_op].toString() == String("RANGE")) {
+                    printf("Predicate RANGE\n");
+                    Array       val = predicate[s_val].toArray();
+                    switch (predicate[s_index_type].toInt64())
+                    {
+                        case AS_INDEX_TYPE_DEFAULT:
+                            as_query_where(query, predicate[s_bin].toString().c_str(), as_range(DEFAULT, NUMERIC, val[0].toInt64(), val[1].toInt64()));
+                            break;
+                        case AS_INDEX_TYPE_LIST:
+                            as_query_where(query, predicate[s_bin].toString().c_str(), as_range(LIST, NUMERIC, val[0].toInt64(), val[1].toInt64()));
+                            break;
+                        case AS_INDEX_TYPE_MAPKEYS:
+                            as_query_where(query, predicate[s_bin].toString().c_str(), as_range(MAPKEYS, NUMERIC, val[0].toInt64(), val[1].toInt64()));
+                            break;
+                        case AS_INDEX_TYPE_MAPVALUES:
+                            as_query_where(query, predicate[s_bin].toString().c_str(), as_range(MAPVALUES, NUMERIC, val[0].toInt64(), val[1].toInt64()));
+                            break;
+                        default :
+                            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                                    "Predicate must be an Array : 'index_type' key value must be valid integer");
+                    }
+                }
+            }
+        }
+
+        return error.code;
+    }
+
+    as_status isPredicate(const Array &predicate, as_error &error)
+    {
+        as_error_reset(&error);
+
+        if (predicate.exists(s_bin) && predicate.exists(s_index_type) && predicate.exists(s_op) && predicate.exists(s_val)) {
+            //Contains or Range predicates
+        } else if (predicate.exists(s_bin) && predicate.exists(s_op) && predicate.exists(s_val)) {
+            //Equals or Between predicates
+        } else {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Predicate must be an Array containing the keys 'bin', ['index_type',] 'op', and 'val'");
+        }
+
+        //Continue validations only if required keys are present in the
+        //predicates
+        if (error.code != AEROSPIKE_OK) {
+            //Predicate is invalid and error code is allready set
+        } else if (!predicate[s_bin].isString() || predicate[s_bin].toString().empty()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Predicate must be an Array : 'bin' key value must be non empty string");
+        } else if (predicate.exists(s_index_type) && !predicate[s_index_type].isInteger()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Predicate must be an Array : 'index_type' key value must be valid integer");
+        } else if (!predicate[s_op].isString() || predicate[s_op].toString().empty()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Predicate must be an Array : 'op' key value must be non empty string");
+        } else {
+            if (predicate[s_val].isArray()) {
+                //Between or Range predicates
+                Array       val = predicate[s_val].toArray();
+                if (!val.exists(0) || !val[0].isInteger() || !val.exists(1) || !val[1].isInteger()) {
+                    as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                            "Predicate must be an Array : 'val' key value must be an array containing two integers");
+                }
+            } else if (!predicate[s_val].isInteger() && !predicate[s_val].isString()) {
+                //Equals or Contains predicate
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Predicate must be an Array : 'val' key value must be integer or non empty string");
             }
         }
 
