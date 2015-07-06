@@ -42,12 +42,22 @@ class Aerospike
     const POLICY_COMMIT_LEVEL_ALL;    // return success after committing all replicas (default)
     const POLICY_COMMIT_LEVEL_MASTER; // return success after committing the master replica
 
+    // OPT_SCAN_PRIORITY can be set to one of the following:
+    const SCAN_PRIORITY_AUTO;   //The cluster will auto adjust the scan priority
+    const SCAN_PRIORITY_LOW;    //Low priority scan.
+    const SCAN_PRIORITY_MEDIUM; //Medium priority scan.
+    const SCAN_PRIORITY_HIGH;   //High priority scan.
+
     // Options can be assigned values that modify default behavior
     const OPT_CONNECT_TIMEOUT;    // value in milliseconds, default: 1000
     const OPT_READ_TIMEOUT;       // value in milliseconds, default: 1000
     const OPT_WRITE_TIMEOUT;      // value in milliseconds, default: 1000
     const OPT_POLICY_RETRY;       // set to a Aerospike::POLICY_RETRY_* value
     const OPT_POLICY_EXISTS;      // set to a Aerospike::POLICY_EXISTS_* value
+    const OPT_SCAN_PRIORITY;      // set to a Aerospike::SCAN_PRIORITY_* value
+    const OPT_SCAN_PERCENTAGE;    // integer value 1-100, default: 100
+    const OPT_SCAN_CONCURRENTLY;  // boolean value, default: false
+    const OPT_SCAN_NOBINS;        // boolean value, default: false
     const OPT_POLICY_KEY;         // records store the digest unique ID, optionally also its (ns,set,key) inputs
     const OPT_POLICY_GEN;         // set to array( Aerospike::POLICY_GEN_* [, $gen_value ] )
     const OPT_POLICY_REPLICA;     // set to one of Aerospike::POLICY_REPLICA_*
@@ -141,6 +151,9 @@ class Aerospike
     // batch operation methods
     public int getMany ( array $keys, array &$records [, array $filter [, array $options]] )
     public int existsMany ( array $keys, array &$metadata [, array $options ] )
+
+    // query and scan methods
+    public int scan ( string $ns, string $set, callback $record_cb [, array $select [, array $options ]] )
 }
 ```
 
@@ -148,6 +161,11 @@ class Aerospike
 ### [Lifecycle and Connection Methods](apiref_connection.md)
 ### [Error Handling and Logging Methods](apiref_error.md)
 ### [Key-Value Methods](apiref_kv.md)
+### [Query and Scan Methods](apiref_streams.md)
 
 An overview of the development of the client is at the top level
 [README](README.md).
+
+We are working toward implementing the complete PHP client API. For comparison,
+here is the [Aerospike class](https://github.com/aerospike/aerospike-client-php/blob/master/doc/aerospike.md)
+as it exists on [aerospike/aerospike-client-php](https://github.com/aerospike/aerospike-client-php).

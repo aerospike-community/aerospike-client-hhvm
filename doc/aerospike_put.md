@@ -20,13 +20,13 @@ array keys and values. This behavior can be modified using the
 **Note:** a binary-string which includes a null-byte will get truncated at the
 position of the **\0** character if it is not wrapped. For more information and
 the workaround see
-[Handling Unsupported Types](https://github.com/aerospike/aerospike-client-php/blob/master/doc/README.md#handling-unsupported-types).
+[Handling Unsupported Types](https://github.com/aerospike/aerospike-client-hhvm/blob/master/doc/README.md#handling-unsupported-types).
 
 ## Parameters
 
 **key** the key under which to store the record. An array with keys ['ns','set','key'] or ['ns','set','digest'].
 
-**bins** the array of bin names and values to write. **Bin names cannot be longer than 14 characters.** Binary data containing the null byte (**\0**) may get truncated. See the [README](https://github.com/aerospike/aerospike-client-php/blob/master/doc/README.md#handling-unsupported-types) for more details and a workaround.
+**bins** the array of bin names and values to write. **Bin names cannot be longer than 14 characters.** Binary data containing the null byte (**\0**) may get truncated. See the [README](https://github.com/aerospike/aerospike-client-hhvm/blob/master/doc/README.md#handling-unsupported-types) for more details and a workaround.
 
 **ttl** the [time-to-live](http://www.aerospike.com/docs/client/c/usage/kvs/write.html#change-record-time-to-live-ttl) in seconds for the record.
 
