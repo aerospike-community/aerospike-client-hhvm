@@ -306,14 +306,14 @@ namespace HPHP {
                     if (options[OPT_READ_TIMEOUT].isInteger()) {
                         POLICY_SET_FIELD(scan, timeout, options[OPT_READ_TIMEOUT].toInt64(), uint32_t);
                     } else {
-                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
+                        as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
                     }
                 }
                 if (options.exists(OPT_WRITE_TIMEOUT)) {
                     if (options[OPT_WRITE_TIMEOUT].isInteger()) {
                         POLICY_SET_FIELD(scan, timeout, options[OPT_WRITE_TIMEOUT].toInt64(), uint32_t);
                     } else {
-                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_WRITE_TIMEOUT");
+                        as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unable to set policy: Invalid Value for OPT_WRITE_TIMEOUT");
                     }
                 }
             }
@@ -327,7 +327,7 @@ namespace HPHP {
                     if (options[OPT_READ_TIMEOUT].isInteger()) {
                         POLICY_SET_FIELD(query, timeout, options[OPT_READ_TIMEOUT].toInt64(), uint32_t);
                     } else {
-                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
+                        as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
                     }
                 }
             }
@@ -341,14 +341,14 @@ namespace HPHP {
                     if (options[OPT_READ_TIMEOUT].isInteger()) {
                         POLICY_SET_FIELD(info, timeout, options[OPT_READ_TIMEOUT].toInt64(), uint32_t);
                     } else {
-                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
+                        as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
                     }
                 }
                 if (options.exists(OPT_WRITE_TIMEOUT)) {
                     if (options[OPT_WRITE_TIMEOUT].isInteger()) {
                         POLICY_SET_FIELD(info, timeout, options[OPT_WRITE_TIMEOUT].toInt64(), uint32_t);
                     } else {
-                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
+                        as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
                     }
                 }
             }
