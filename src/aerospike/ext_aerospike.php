@@ -35,8 +35,6 @@ class Aerospike {
         public function scanInfo(mixed $scan_id, mixed &$scan_info, mixed $options = NULL): int;
     //VISHALB
     <<__Native>>
-        public function query(mixed $ns, mixed $set, mixed $where, mixed $function, mixed $select = NULL, mixed $options = NULL): int;
-    <<__Native>>
         public static function predicateEquals(mixed $ns, mixed $value): mixed;
     <<__Native>>
         public static function predicateContains(mixed $ns, mixed $index_type, mixed $value): mixed;
@@ -44,6 +42,10 @@ class Aerospike {
         public static function predicateBetween(mixed $ns, mixed $min, mixed $max): mixed;
     <<__Native>>
         public static function predicateRange(mixed $ns, mixed $index_type, mixed $min, mixed $max): mixed;
+    <<__Native>>
+        public function query(mixed $ns, mixed $set, mixed $where, mixed $function, mixed $select = NULL, mixed $options = NULL): int;
+    <<__Native>>
+        public function aggregate(mixed $ns, mixed $set, mixed $where, mixed $module, mixed $function, mixed $args, mixed &$result, mixed $options = NULL): int;
     //VISHALB
     <<__Native>>
         public function errorno(): int;

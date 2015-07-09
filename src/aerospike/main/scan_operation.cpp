@@ -18,7 +18,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    bool scan_callback(const as_val * val_p, void * udata)
+    bool scan_callback(const as_val *val_p, void *udata)
     {
         if (!val_p) {
             return false;
@@ -287,7 +287,7 @@ namespace HPHP {
                     //failure condition is enabled
                     if (error.code == AEROSPIKE_OK && isPredicate(predicate, error) == AEROSPIKE_OK) {
                         initialize_where_predicate(query, predicate, error);
-                    }//VISHALB
+                    }
                 }
             }
         }
@@ -430,6 +430,93 @@ namespace HPHP {
         }
 
         return error.code;
+    }
+
+    as_status initialize_aggregate(as_query *query, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, as_error &error)
+    {
+        as_error_reset(&error);
+
+        if (!ns.isString() || ns.toString().empty()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Namespace must be non empty string");
+        } else if (!set.isNull() && (!set.isString() || set.toString().empty())) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Set must be NULL or non empty string");
+        } else if (!where.isNull() && !where.isArray()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Predicate must be an Array containing the keys 'bin', ['index_type',] 'op', and 'val'");
+        } else if (!module.isString() || module.toString().empty() || !function.isString() || function.toString().empty()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Module/Function must not be empty");
+        } else if (!args.isNull() && !args.isArray()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Function arguments must be of type array");
+        } else {
+            //Initialize query structure
+            as_query_init(query, ns.toString().c_str(), set.toString().c_str());
+            if (!where.isNull()) {
+                Array       predicate = where.toArray();
+                if (predicate.length() > 0) {
+                    if (isPredicate(predicate, error) == AEROSPIKE_OK) {
+                        initialize_where_predicate(query, predicate, error);
+                    }
+                }
+            }
+            //Apply UDF to query
+            //as_query_apply(query, module.toString().c_str(), function.toString().c_str(), NULL);
+            as_query_apply(query, "query_udf", "sum_test_bin", NULL);
+        }
+
+        return error.code;
+    }
+
+    bool aggregate_callback(const as_val *val_p, void *udata)
+    {
+        bool do_continue = true;
+
+        if (!val_p) {
+            printf("Aggregate callback : Complete : false\n");
+            return false;
+        }
+
+        switch(as_val_type(val_p))
+        {
+            case AS_UNDEF:
+                printf("DATATYPE : AS_UNDEF\n");
+                break;
+            case AS_NIL:
+                printf("DATATYPE : AS_NIL\n");
+                break;
+            case AS_BOOLEAN:
+                printf("DATATYPE : AS_BOOLEAN\n");
+                break;
+            case AS_INTEGER:
+                printf("DATATYPE : AS_INTEGER\n");
+                break;
+            case AS_STRING:
+                printf("DATATYPE : AS_STRING\n");
+                break;
+            case AS_LIST:
+                printf("DATATYPE : AS_LIST\n");
+                break;
+            case AS_MAP:
+                printf("DATATYPE : AS_MAP\n");
+                break;
+            case AS_REC:
+                printf("DATATYPE : AS_REC\n");
+                break;
+            case AS_PAIR:
+                printf("DATATYPE : AS_PAIR\n");
+                break;
+            case AS_BYTES:
+                printf("DATATYPE : AS_BYTES\n");
+                break;
+            default:
+                do_continue = false;
+        }
+
+        printf("Aggregate call returned true\n");
+        return do_continue;
     }
     //VISHALB
 }

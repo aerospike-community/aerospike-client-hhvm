@@ -809,11 +809,11 @@ namespace HPHP {
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
-                    "get: connection not established");
+                    "scan: connection not established");
         } else if (!function.isObject()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Parameter 3 must be a function object");
-        } else if(AEROSPIKE_OK == initialize_scan(&scan, ns, set, bins, error)) {
+        } else if (AEROSPIKE_OK == initialize_scan(&scan, ns, set, bins, error)) {
             scan_initialized = true;
             if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error) &&
@@ -861,7 +861,7 @@ namespace HPHP {
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
-                    "get: connection not established");
+                    "scanApply: connection not established");
         /*} else if (scan_id.isNull()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "scan_id argument is invalid");*/
@@ -915,7 +915,7 @@ namespace HPHP {
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
-                    "get: connection not established");
+                    "scanInfo: connection not established");
         } else if (!scan_id.isNull() && !scan_id.isInteger()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "scan_id argument is invalid");
@@ -1027,7 +1027,7 @@ namespace HPHP {
                     "Invalid aerospike connection object");
         } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
-                    "get: connection not established");
+                    "query: connection not established");
         } else if (!function.isObject()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Parameter 4 must be a function object");
@@ -1036,6 +1036,46 @@ namespace HPHP {
             if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
                 aerospike_query_foreach(data->as_ref_p->as_p, &error, &query_policy, &query, scan_callback, &udata);
+            }
+        }
+
+        if (query_initialized) {
+            as_query_destroy(&query);
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        return error.code;
+    }
+
+    int64_t HHVM_METHOD(Aerospike, aggregate, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, VRefParam result, const Variant &options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_query            query;
+        as_policy_query     query_policy;
+        bool                query_initialized = false;
+        Array               result_array = Array::Create();
+        PolicyManager       policy_manager(&query_policy, "query",
+                &data->as_ref_p->as_p->config);
+
+        foreach_callback_udata      udata(result_array, error);
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "aggregate: connection not established");
+        } else if (AEROSPIKE_OK == initialize_aggregate(&query, ns, set, where, module, function, args, error)) {
+            query_initialized = true;
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
+                aerospike_query_foreach(data->as_ref_p->as_p, &error, &query_policy, &query, aggregate_callback, &udata);
             }
         }
 
@@ -1108,6 +1148,7 @@ namespace HPHP {
                 HHVM_STATIC_ME(Aerospike, predicateBetween);
                 HHVM_STATIC_ME(Aerospike, predicateRange);
                 HHVM_ME(Aerospike, query);
+                HHVM_ME(Aerospike, aggregate);
                 //VISHALB
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
