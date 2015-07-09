@@ -927,48 +927,6 @@ namespace HPHP {
     /* }}} */
 
     //VISHALB
-    int64_t HHVM_METHOD(Aerospike, query, const Variant &ns, const Variant &set, const Variant &where, const Variant &function, const Variant &bins, const Variant &options)
-    {
-        auto                data = Native::data<Aerospike>(this_);
-        as_error            error;
-        as_query            query;
-        as_policy_query     query_policy;
-        bool                query_initialized = false;
-        PolicyManager       policy_manager(&query_policy, "query",
-                &data->as_ref_p->as_p->config);
-
-        foreach_callback_user_udata      udata(function, error);
-
-        as_error_init(&error);
-
-        if (!data->as_ref_p || !data->as_ref_p->as_p) {
-            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
-                    "Invalid aerospike connection object");
-        } else if (!data->is_connected) {
-            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
-                    "get: connection not established");
-        } else if (!function.isObject()) {
-            as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                    "Parameter 4 must be a function object");
-        } else if (AEROSPIKE_OK == initialize_query(&query, ns, set, where, bins, error)) {
-            query_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
-                        data->serializer_value, options, error)) {
-                aerospike_query_foreach(data->as_ref_p->as_p, &error, &query_policy, &query, scan_callback, &udata);
-            }
-        }
-
-        if (query_initialized) {
-            as_query_destroy(&query);
-        }
-
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
-
-        return error.code;
-    }
-
     Variant HHVM_STATIC_METHOD(Aerospike, predicateEquals, const Variant &bin, const Variant &value)
     {
         Array       where = Array::Create();
@@ -1034,6 +992,48 @@ namespace HPHP {
             return where;
         }
     }
+
+    int64_t HHVM_METHOD(Aerospike, query, const Variant &ns, const Variant &set, const Variant &where, const Variant &function, const Variant &bins, const Variant &options)
+    {
+        auto                data = Native::data<Aerospike>(this_);
+        as_error            error;
+        as_query            query;
+        as_policy_query     query_policy;
+        bool                query_initialized = false;
+        PolicyManager       policy_manager(&query_policy, "query",
+                &data->as_ref_p->as_p->config);
+
+        foreach_callback_user_udata      udata(function, error);
+
+        as_error_init(&error);
+
+        if (!data->as_ref_p || !data->as_ref_p->as_p) {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "Invalid aerospike connection object");
+        } else if (!data->is_connected) {
+            as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
+                    "get: connection not established");
+        } else if (!function.isObject()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Parameter 4 must be a function object");
+        } else if (AEROSPIKE_OK == initialize_query(&query, ns, set, where, bins, error)) {
+            query_initialized = true;
+            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
+                aerospike_query_foreach(data->as_ref_p->as_p, &error, &query_policy, &query, scan_callback, &udata);
+            }
+        }
+
+        if (query_initialized) {
+            as_query_destroy(&query);
+        }
+
+        pthread_rwlock_wrlock(&data->latest_error_mutex);
+        as_error_copy(&data->latest_error, &error);
+        pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        return error.code;
+    }
     //VISHALB
 
     /* {{{ proto string Aerospike::error ( void )
@@ -1088,11 +1088,11 @@ namespace HPHP {
                 HHVM_ME(Aerospike, scanApply);
                 HHVM_ME(Aerospike, scanInfo);
                 //VISHALB
-                HHVM_ME(Aerospike, query);
                 HHVM_STATIC_ME(Aerospike, predicateEquals);
                 HHVM_STATIC_ME(Aerospike, predicateContains);
                 HHVM_STATIC_ME(Aerospike, predicateBetween);
                 HHVM_STATIC_ME(Aerospike, predicateRange);
+                HHVM_ME(Aerospike, query);
                 //VISHALB
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
