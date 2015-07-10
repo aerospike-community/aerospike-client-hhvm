@@ -1057,7 +1057,10 @@ namespace HPHP {
         as_query            query;
         as_policy_query     query_policy;
         bool                query_initialized = false;
+        StaticPoolManager   static_pool;
+        int16_t             serializer_type = SERIALIZER_PHP;
         Array               result_array = Array::Create();
+        Variant             result_variant;
         PolicyManager       policy_manager(&query_policy, "query",
                 &data->as_ref_p->as_p->config);
 
@@ -1071,11 +1074,13 @@ namespace HPHP {
         } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "aggregate: connection not established");
-        } else if (AEROSPIKE_OK == initialize_aggregate(&query, ns, set, where, module, function, args, error)) {
+        } else if (AEROSPIKE_OK == initialize_aggregate(&query, ns, set, where, module, function, args, static_pool, serializer_type, error)) {
             query_initialized = true;
             if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
                 aerospike_query_foreach(data->as_ref_p->as_p, &error, &query_policy, &query, aggregate_callback, &udata);
+                //Copy the returne data of aggregate in out variable
+                result = result_array;
             }
         }
 
@@ -1086,6 +1091,9 @@ namespace HPHP {
         pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);
+
+        result_variant = result_array;
+        result_variant.releaseForSweep();
 
         return error.code;
     }
@@ -1191,11 +1199,11 @@ namespace HPHP {
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
                         "aerospike.udf.lua_system_path",
                         "/opt/aerospike/client-php/sys-lua",
-                        &ini_entry.shm_takeover_threshold_sec);
+                        &ini_entry.lua_system_path);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
                         "aerospike.udf.lua_user_path",
                         "/opt/aerospike/client-php/user-lua",
-                        &ini_entry.shm_takeover_threshold_sec);
+                        &ini_entry.lua_user_path);
                 Native::registerNativeDataInfo<Aerospike>(s_Aerospike.get());
                 pthread_rwlock_init(&connection_mutex, NULL);
                 pthread_rwlock_init(&scan_callback_mutex, NULL);

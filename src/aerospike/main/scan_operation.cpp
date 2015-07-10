@@ -280,6 +280,7 @@ namespace HPHP {
                     }
                 }
             }
+            //Add where predicates to query
             if (!where.isNull()) {
                 Array       predicate = where.toArray();
                 if (predicate.length() > 0) {
@@ -432,8 +433,11 @@ namespace HPHP {
         return error.code;
     }
 
-    as_status initialize_aggregate(as_query *query, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, as_error &error)
+    as_status initialize_aggregate(as_query *query, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error)
     {
+        as_list     *args_list = NULL;
+        Array       php_args;
+
         as_error_reset(&error);
 
         if (!ns.isString() || ns.toString().empty()) {
@@ -454,6 +458,7 @@ namespace HPHP {
         } else {
             //Initialize query structure
             as_query_init(query, ns.toString().c_str(), set.toString().c_str());
+            //Add where predicates to query
             if (!where.isNull()) {
                 Array       predicate = where.toArray();
                 if (predicate.length() > 0) {
@@ -462,9 +467,19 @@ namespace HPHP {
                     }
                 }
             }
-            //Apply UDF to query
-            //as_query_apply(query, module.toString().c_str(), function.toString().c_str(), NULL);
-            as_query_apply(query, "query_udf", "sum_test_bin", NULL);
+            //Apply UDF to query only when where predicates are added
+            //successfully or not present
+            if (error.code == AEROSPIKE_OK) {
+                if (!args.isNull()) {
+                    php_args = args.toArray();
+                }
+                if (!args.isNull() && php_list_to_as_list(php_args, &args_list, static_pool, serializer_type, error)) {
+                    //Argument list creation for UDF failed
+                } else if (!as_query_apply(query, module.toString().c_str(), function.toString().c_str(), args_list)) {
+                    as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                            "Unable to initiate aggregate : UDF apply failed");
+                }
+            }
         }
 
         return error.code;
@@ -472,50 +487,28 @@ namespace HPHP {
 
     bool aggregate_callback(const as_val *val_p, void *udata)
     {
-        bool do_continue = true;
+        bool        do_continue = true;
+        Variant     php_value;
 
         if (!val_p) {
-            printf("Aggregate callback : Complete : false\n");
             return false;
         }
 
-        switch(as_val_type(val_p))
-        {
-            case AS_UNDEF:
-                printf("DATATYPE : AS_UNDEF\n");
-                break;
-            case AS_NIL:
-                printf("DATATYPE : AS_NIL\n");
-                break;
-            case AS_BOOLEAN:
-                printf("DATATYPE : AS_BOOLEAN\n");
-                break;
-            case AS_INTEGER:
-                printf("DATATYPE : AS_INTEGER\n");
-                break;
-            case AS_STRING:
-                printf("DATATYPE : AS_STRING\n");
-                break;
-            case AS_LIST:
-                printf("DATATYPE : AS_LIST\n");
-                break;
-            case AS_MAP:
-                printf("DATATYPE : AS_MAP\n");
-                break;
-            case AS_REC:
-                printf("DATATYPE : AS_REC\n");
-                break;
-            case AS_PAIR:
-                printf("DATATYPE : AS_PAIR\n");
-                break;
-            case AS_BYTES:
-                printf("DATATYPE : AS_BYTES\n");
-                break;
-            default:
-                do_continue = false;
+        pthread_rwlock_wrlock(&scan_callback_mutex);
+        if (g_context.isNull()) {
+            hphp_session_init();
         }
 
-        printf("Aggregate call returned true\n");
+        foreach_callback_udata      *udata_p = (foreach_callback_udata *)udata;
+
+        if (as_val_to_php_variant(val_p, php_value, udata_p->error) != AEROSPIKE_OK) {
+            //Conversion failed stop the aggregate call
+            do_continue = false;
+        } else {
+            udata_p->data.append(php_value);
+        }
+        pthread_rwlock_unlock(&scan_callback_mutex);
+
         return do_continue;
     }
     //VISHALB
