@@ -28,6 +28,6 @@ namespace HPHP {
     extern as_status remove_udf_module(aerospike *as_p, const Variant& module, as_policy_info *info_policy_p, as_error& error);
     extern as_status get_registered_udf_module_code(aerospike *as_p, const Variant& module, VRefParam module_code, const Variant& language, as_policy_info *info_policy_p, as_error& error);
     extern as_status list_registered_udf_modules(aerospike *as_p, Array& modules, const Variant& language, as_policy_info *info_policy_p, as_error& error);
-    extern as_status aerospike_udf_apply(aerospike *as_p, as_key key, const Variant& lua_module, const Variant& lua_function, const Variant& lua_args, as_policy_apply *apply_policy_p, StaticPoolManager &static_pool, int16_t serializer_type, VRefParam returned_type, as_error& error);
+    extern as_status aerospike_udf_apply(aerospike *as_p, as_key key, const Variant& module, const Variant& function, const Variant& args, as_policy_apply *apply_policy_p, StaticPoolManager &static_pool, int16_t serializer_type, VRefParam php_returned_value, as_error& error);
 } // namespace HPHP
 #endif /* end of __UDF_OPERATIONS_H__ */

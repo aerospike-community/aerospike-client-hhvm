@@ -935,6 +935,7 @@ namespace HPHP {
     int64_t HHVM_METHOD(Aerospike, register, const Variant& path, const Variant& module,
             const Variant& language, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_info      info_policy;
@@ -959,7 +960,6 @@ namespace HPHP {
         pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);
-
         return error.code;
     }
     /* }}} */
@@ -968,6 +968,7 @@ namespace HPHP {
        Removes a UDF module from the Aerospike cluster */
     int64_t HHVM_METHOD(Aerospike, deregister, const Variant& module, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_info      info_policy;
@@ -991,7 +992,6 @@ namespace HPHP {
         pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);
-
         return error.code;
     }
     /* }}} */
@@ -1001,6 +1001,7 @@ namespace HPHP {
     int64_t HHVM_METHOD(Aerospike, getRegistered, const Variant& module, VRefParam module_code,
             const Variant& language, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_info      info_policy;
@@ -1025,7 +1026,6 @@ namespace HPHP {
         pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);
-
         return error.code;
     }
     /* }}} */
@@ -1034,6 +1034,7 @@ namespace HPHP {
        Lists the UDF modules registered with the server */
     int64_t HHVM_METHOD(Aerospike, listRegistered, VRefParam modules, const Variant& language, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_info      info_policy;
@@ -1061,14 +1062,15 @@ namespace HPHP {
         pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);
-
         return error.code;
     }
+
     /* {{{ proto int Aerospike::apply( array key, String module, String function [, array args [, mixed &returned [, array options]] )
-       Registers a UDF module with the Aerospike cluster */
-    int64_t HHVM_METHOD(Aerospike, apply, const Array& php_key, const Variant& lua_module, const Variant& lua_function,
+       Applies a UDF to a record */
+    int64_t HHVM_METHOD(Aerospike, apply, const Array& php_key, const Variant& module, const Variant& function,
             const Variant& args, VRefParam returned_value, const Variant& options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_key              key;
@@ -1090,14 +1092,15 @@ namespace HPHP {
             PolicyManager policy_manager(&apply_policy, "apply", &data->as_ref_p->as_p->config);
             if (AEROSPIKE_OK == policy_manager.set_policy(&serializer_type,
                         data->serializer_value, options, error)) {
-                aerospike_udf_apply(data->as_ref_p->as_p, key, lua_module, lua_function, args, &apply_policy, static_pool, serializer_type, ret
-                        urned_value, error);
+                aerospike_udf_apply(data->as_ref_p->as_p, key, module, function, args,
+                        &apply_policy, static_pool, serializer_type, returned_value, error);
             }
         }
 
         if (key_initialized) {
             as_key_destroy(&key);
         }
+
         pthread_rwlock_wrlock(&data->latest_error_mutex);
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);

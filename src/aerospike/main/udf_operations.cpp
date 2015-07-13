@@ -22,6 +22,7 @@ namespace HPHP {
     as_status read_udf_file_contents(aerospike *as_p, const Variant& path, as_bytes* udf_content_p, as_error& error)
     {
         FILE *udf_file_path = NULL;
+        FILE *fileW_p = NULL;
         uint8_t* bytes_p = NULL;
         uint8_t* buff_p = NULL;
 
@@ -74,7 +75,6 @@ namespace HPHP {
 
             memcpy(copy_filepath + user_path_len + 1, filename, strlen(filename));
 
-            FILE *fileW_p = NULL;
             fileW_p = fopen(copy_filepath, "r");
             if(!fileW_p && errno == ENOENT) {
                 fileW_p = fopen(copy_filepath, "w");
@@ -97,6 +97,10 @@ namespace HPHP {
 
             if (udf_file_path) {
                 fclose(udf_file_path);
+            }
+
+            if (fileW_p) {
+                fclose(fileW_p);
             }
 
             if (bytes_p) {
@@ -187,6 +191,7 @@ namespace HPHP {
         } else {
             as_error_update(&error, AEROSPIKE_ERR_PARAM, "Invalid lua module type");
         }
+
         return error.code;
     }
     /*
@@ -195,10 +200,10 @@ namespace HPHP {
      *
      * @param as_p                  Aerospike pointer to be used by this operation
      * @param key                   Key of the record the function to be applied to
-     * @param lua_module            The lua module to be registered with Aeropsike
+     * @param module                The lua module to be registered with Aeropsike
      *                              cluster
-     * @param lua_function          The UDF lua function to be applied on the record
-     * @param lua_args              The arguments to the LUA function
+     * @param function              The UDF lua function to be applied on the record
+     * @param args                  The arguments to the LUA function
      * @param apply_policy_p        The as_policy_apply to be used for this
      *                              operation
      * @param static_pool           StaticPoolManager instance reference, to be used for
@@ -211,31 +216,39 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status aerospike_udf_apply(aerospike *as_p, as_key key, const Variant& lua_module, const Variant& lua_function, const Variant& lua_args,
-            as_policy_apply *apply_policy_p, StaticPoolManager &static_pool, int16_t serializer_type, VRefParam returned_type, as_error& error)
+    as_status aerospike_udf_apply(aerospike *as_p, as_key key, const Variant& module, const Variant& function, const Variant& args,
+            as_policy_apply *apply_policy_p, StaticPoolManager& static_pool, int16_t serializer_type, VRefParam php_returned_value,
+            as_error& error)
     {
-        as_error_reset(&error);
-        Array php_args;
+        Array php_udf_args;
         as_val* udf_result = NULL;
         as_list *args_list = NULL;
 
-        if (!lua_module.isString() || !lua_function.isString() || lua_module.toString().empty() || lua_function.toString().empty()) {
-            as_error_update(&error, AEROSPIKE_ERR_PARAM, "Lua module/Lua function should be of type string and non-empty");
+        as_error_reset(&error);
+
+        if (!module.isString() || !function.isString() || module.toString().empty()
+                || function.toString().empty()) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Lua module/Lua function should be of type string and non-empty");
         } 
-        if (!lua_args.isArray()) {
+        if (!args.isArray()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM, "Lua function arguments should be of type array");
         }
-        php_args = lua_args.toArray();
-        if (!lua_args.isNull() && php_list_to_as_list(php_args, &args_list, static_pool, serializer_type, error)) {
+        php_udf_args = args.toArray();
+        if (!args.isNull() && php_list_to_as_list(php_udf_args, &args_list, static_pool,
+                    serializer_type, error)) {
             //Argument list creation for UDF failed
+            return error.code;
         }
-        const char* module_p = lua_module.toString().c_str();
-        const char* function_p = lua_function.toString().c_str();
+        const char* module_p = module.toString().c_str();
+        const char* function_p = function.toString().c_str();
 
-        if( AEROSPIKE_OK == aerospike_key_apply(as_p, &error, apply_policy_p, &key, module_p, function_p, args_list, &udf_result))
+        if( AEROSPIKE_OK == aerospike_key_apply(as_p, &error, apply_policy_p, &key, module_p,
+                    function_p, args_list, &udf_result))
         {
-            as_val_to_php_variant(udf_result, returned_type, error);
+            as_val_to_php_variant(udf_result, php_returned_value, error);
         }
+
         return error.code;
     }
     /*
@@ -282,6 +295,7 @@ namespace HPHP {
         } else {
             as_error_update(&error, AEROSPIKE_ERR_PARAM, "Invalid module type");
         }
+
         return error.code;
     }
 
