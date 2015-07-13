@@ -317,7 +317,6 @@ namespace HPHP {
                     }
                 }
             }
-        //VISHALB
         } else if (strcmp(this->type, "query") == 0) {
             as_policy_query_copy(&(this->config_p->policies.query), CURRENT_POLICY(query));
 
@@ -331,7 +330,6 @@ namespace HPHP {
                     }
                 }
             }
-        //VISHALB
         } else if (strcmp(this->type, "info") == 0) {
             as_policy_info_copy(&(this->config_p->policies.info), CURRENT_POLICY(info));
 
@@ -481,37 +479,37 @@ namespace HPHP {
 
         if (options.exists(OPT_SCAN_PRIORITY)) {
             if (!options[OPT_SCAN_PRIORITY].isInteger()) {
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Unable to set policy: Invalid Value for OPT_SCAN_PRIORITY");
             } else if (!as_scan_set_priority(scan, (as_scan_priority)options[OPT_SCAN_PRIORITY].toInt16())) {
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Unable to set policy: Invalid Value for OPT_SCAN_PRIORITY");
             }
         }
         if (options.exists(OPT_SCAN_PERCENTAGE)) {
             if (!options[OPT_SCAN_PERCENTAGE].isInteger()) {
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Unable to set policy: Invalid Value for OPT_SCAN_PERCENTAGE");
             } else if(!as_scan_set_percent(scan, (uint8_t)options[OPT_SCAN_PERCENTAGE].toInt16())) {
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Unable to set policy: Invalid Value for OPT_SCAN_PERCENTAGE");
             }
         }
         if (options.exists(OPT_SCAN_CONCURRENTLY)) {
             if (!options[OPT_SCAN_CONCURRENTLY].isBoolean()) {
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Unable to set policy: Invalid Value for OPT_SCAN_CONCURRENTLY");
             } else if(!as_scan_set_concurrent(scan, (bool)options[OPT_SCAN_CONCURRENTLY].toBoolean())) {
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Unable to set policy: Invalid Value for OPT_SCAN_CONCURRENTLY");
             }
         }
         if (options.exists(OPT_SCAN_NOBINS)) {
             if (!options[OPT_SCAN_NOBINS].isBoolean()) {
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Unable to set policy: Invalid Value for OPT_SCAN_NOBINS");
             } else if(!as_scan_set_nobins(scan, (bool)options[OPT_SCAN_NOBINS].toBoolean())){
-                return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Unable to set policy: Invalid Value for OPT_SCAN_NOBINS");
             }
         }

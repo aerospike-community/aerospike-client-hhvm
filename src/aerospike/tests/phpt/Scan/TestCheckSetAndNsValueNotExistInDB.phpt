@@ -5,6 +5,6 @@ Scan - Set and namespance not exist in DB
 <?php
 include dirname(__FILE__)."/../../astestframework/astest-phpt-loader.inc";
 aerospike_phpt_runtest("Scan", "testCheckSetAndNsValueNotExistInDB");
---EXPECT--
-ERR_NAMESPACE_NOT_FOUND
+--EXPECTREGEX--
+(ERR_NAMESPACE_NOT_FOUND|ERR_SERVER)
 

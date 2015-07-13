@@ -7,7 +7,7 @@ extern "C" {
 #include "aerospike/aerospike_key.h"
 #include "aerospike/as_status.h"
 #include "aerospike/aerospike_scan.h"
-#include "aerospike/aerospike_query.h"//VISHALB
+#include "aerospike/aerospike_query.h"
 #include "pthread.h"
 #include "stdlib.h"
 }
@@ -65,7 +65,7 @@ namespace HPHP {
     const StaticString s_op("op");
     const StaticString s_bin("bin");
     const StaticString s_val("val");
-    const StaticString s_index_type("index_type");//VISHALB
+    const StaticString s_index_type("index_type");
     const StaticString s_progress_pct("progress_pct");
     const StaticString s_records_scanned("records_scanned");
     const StaticString s_status("status");

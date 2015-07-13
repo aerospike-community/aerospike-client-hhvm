@@ -1,9 +1,9 @@
 #include "scan_operation.h"
 #include "conversions.h"
-#include "ext_aerospike.h"//VISHALB
+#include "ext_aerospike.h"
 
 #include "hphp/runtime/base/builtin-functions.h"
-#include "hphp/runtime/base/program-functions.h"//VISHALB
+#include "hphp/runtime/base/program-functions.h"
 
 namespace HPHP {
 
@@ -31,11 +31,9 @@ namespace HPHP {
         }
 
         pthread_rwlock_wrlock(&scan_callback_mutex);
-        //VISHALB
         if (g_context.isNull()) {
             hphp_session_init();
         }
-        //VISHALB
         Array           temp_php_record = Array::Create();
         foreach_callback_user_udata      *conversion_data_p = (foreach_callback_user_udata *)udata;
 
@@ -72,9 +70,12 @@ namespace HPHP {
     {
         as_error_reset(&error);
 
-        if (!ns.isString() || ns.toString().empty() || !set.isString() || set.toString().empty()) {
+        if (!ns.isString() || ns.toString().empty()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Namespace/Set must be non empty string");
+        } else if (!set.isNull() && (!set.isString() || set.toString().empty())) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Set must be NULL or non empty string");
         } else if (!bins.isNull() && !bins.isArray()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Bin names must be an Array");
@@ -136,9 +137,12 @@ namespace HPHP {
 
         as_error_reset(&error);
 
-        if (!ns.isString() || ns.toString().empty() || !set.isString() || set.toString().empty()) {
+        if (!ns.isString() || ns.toString().empty()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Namespace/Set must not be empty");
+        } else if (!set.isNull() && (!set.isString() || set.toString().empty())) {
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Set must be NULL or non empty string");
         } else if (!module.isString() || module.toString().empty() || !function.isString() || function.toString().empty()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Module/Function must not be empty");
@@ -163,7 +167,6 @@ namespace HPHP {
         return error.code;
     }
 
-    //VISHALB
     bool construct_Equals_Contains_Predicates(Array &where, const Variant &bin, const Variant &value, int64_t index_type/* = 0*/, bool isContains/* = false*/)
     {
         bool        isNull = false;
@@ -511,5 +514,4 @@ namespace HPHP {
 
         return do_continue;
     }
-    //VISHALB
 }

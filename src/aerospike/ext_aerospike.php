@@ -33,7 +33,6 @@ class Aerospike {
         public function scanApply(mixed $ns, mixed $set, mixed $module, mixed $function, mixed $args, mixed &$scan_id, mixed $options = NULL): int;
     <<__Native>>
         public function scanInfo(mixed $scan_id, mixed &$scan_info, mixed $options = NULL): int;
-    //VISHALB
     <<__Native>>
         public static function predicateEquals(mixed $ns, mixed $value): mixed;
     <<__Native>>
@@ -46,7 +45,6 @@ class Aerospike {
         public function query(mixed $ns, mixed $set, mixed $where, mixed $function, mixed $select = NULL, mixed $options = NULL): int;
     <<__Native>>
         public function aggregate(mixed $ns, mixed $set, mixed $where, mixed $module, mixed $function, mixed $args, mixed &$result, mixed $options = NULL): int;
-    //VISHALB
     <<__Native>>
         public function errorno(): int;
     <<__Native>>

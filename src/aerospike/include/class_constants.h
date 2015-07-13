@@ -106,12 +106,10 @@ namespace HPHP {
         { AS_POLICY_COMMIT_LEVEL_MASTER         ,   "POLICY_COMMIT_LEVEL_MASTER"        },
         { AS_INDEX_STRING                       ,   "INDEX_STRING"                      },
         { AS_INDEX_NUMERIC                      ,   "INDEX_NUMERIC"                     },
-        //VISHALB
         { AS_INDEX_TYPE_DEFAULT                 ,   "INDEX_TYPE_DEFAULT"                },
         { AS_INDEX_TYPE_LIST                    ,   "INDEX_TYPE_LIST"                   },
         { AS_INDEX_TYPE_MAPKEYS                 ,   "INDEX_TYPE_MAPKEYS"                },
         { AS_INDEX_TYPE_MAPVALUES               ,   "INDEX_TYPE_MAPVALUES"              },
-        //VISHALB
         { AS_OPERATOR_WRITE                     ,   "OPERATOR_WRITE"                    },
         { AS_OPERATOR_READ                      ,   "OPERATOR_READ"                     },
         { AS_OPERATOR_INCR                      ,   "OPERATOR_INCR"                     },

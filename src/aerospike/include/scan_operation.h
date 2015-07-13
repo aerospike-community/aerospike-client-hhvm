@@ -11,7 +11,7 @@ extern "C" {
 #include "aerospike/as_list.h"
 #include "aerospike/as_arraylist.h"
 #include "aerospike/as_scan.h"
-#include "aerospike/as_query.h"//VISHALB
+#include "aerospike/as_query.h"
 }
 
 namespace HPHP {
@@ -33,7 +33,6 @@ namespace HPHP {
     extern bool scan_callback(const as_val * val_p, void * udata);
     extern as_status initialize_scan(as_scan *scan, const Variant &ns, const Variant &set, const Variant &bins, as_error &error);
     extern as_status initialize_scanApply(as_scan *scan, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error);
-    //VISHALB
     extern bool construct_Equals_Contains_Predicates(Array &where, const Variant &bin, const Variant &value, int64_t index_type = 0, bool isContains = false);
     extern bool construct_Between_Range_Predicates(Array &where, const Variant &bin, const Variant &min, const Variant &max, int64_t index_type = 0, bool isRange = false);
     extern as_status initialize_query(as_query *scan, const Variant &ns, const Variant &set, const Variant &where, const Variant &bins, as_error &error);
@@ -41,7 +40,6 @@ namespace HPHP {
     extern as_status initialize_where_predicate(as_query *query, const Array &predicate, as_error &error);
     extern as_status initialize_aggregate(as_query *scan, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error);
     extern bool aggregate_callback(const as_val * val_p, void * udata);
-    //VISHALB
 
     /*
      ************************************************************************************

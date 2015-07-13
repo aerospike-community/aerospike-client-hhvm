@@ -86,7 +86,12 @@ class ScanInfo extends AerospikeTestCommon
         } catch (Exception $e) {
             return $this->db->errorno();
         }
-        return $this->db->errorno();
+
+        if ($status == Aerospike::OK) {
+            return Aerospike::OK;
+        } else {
+            return $this->db->errorno();
+        }
     }
 	/**
 	 * @test
@@ -115,7 +120,12 @@ class ScanInfo extends AerospikeTestCommon
         } catch (Exception $e) {
               return $this->db->errorno();
         }
-        return $this->db->errorno();
+
+        if ($status == Aerospike::OK) {
+            return Aerospike::OK;
+        } else {
+            return $this->db->errorno();
+        }
     }
 	/**
 	 * @test

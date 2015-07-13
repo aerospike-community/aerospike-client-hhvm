@@ -98,4 +98,6 @@ if ($status !== Aerospike::OK) {
 
 ## See Also
 
-- [Aerospike::get()](aerospike_get.md)
+- [Aerospike Data Model](http://www.aerospike.com/docs/architecture/data-model.html)
+- [Scans](http://www.aerospike.com/docs/guide/scan.html)
+- [Managing Scans](http://www.aerospike.com/docs/operations/manage/scans/)

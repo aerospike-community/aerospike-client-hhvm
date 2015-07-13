@@ -6,6 +6,6 @@ ScanApply - Percent is int
 include dirname(__FILE__)."/../../astestframework/astest-phpt-loader.inc";
 aerospike_phpt_runtest("ScanApply", "testScanApplyPercentIsInt");
 --XFAIL--
-Failed because UDF AIPs are getting used here and are yet not implemented
+Waiting for the cause to be fixed in the C client.
 --EXPECT--
 OK

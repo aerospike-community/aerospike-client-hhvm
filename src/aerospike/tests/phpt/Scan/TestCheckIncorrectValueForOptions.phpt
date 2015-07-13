@@ -6,5 +6,5 @@ Scan - Incorrect value for options
 include dirname(__FILE__)."/../../astestframework/astest-phpt-loader.inc";
 aerospike_phpt_runtest("Scan", "testCheckIncorrectValueForOptions");
 --EXPECT--
-ERR_CLIENT
+ERR_PARAM
 

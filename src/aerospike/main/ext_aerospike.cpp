@@ -941,7 +941,6 @@ namespace HPHP {
     }
     /* }}} */
 
-    //VISHALB
     Variant HHVM_STATIC_METHOD(Aerospike, predicateEquals, const Variant &bin, const Variant &value)
     {
         Array       where = Array::Create();
@@ -1010,6 +1009,7 @@ namespace HPHP {
 
     int64_t HHVM_METHOD(Aerospike, query, const Variant &ns, const Variant &set, const Variant &where, const Variant &function, const Variant &bins, const Variant &options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_query            query;
@@ -1052,6 +1052,7 @@ namespace HPHP {
 
     int64_t HHVM_METHOD(Aerospike, aggregate, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, VRefParam result, const Variant &options)
     {
+        VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_query            query;
@@ -1097,7 +1098,6 @@ namespace HPHP {
 
         return error.code;
     }
-    //VISHALB
 
     /* {{{ proto string Aerospike::error ( void )
        Displays the error message associated with the last operation */
@@ -1150,14 +1150,12 @@ namespace HPHP {
                 HHVM_ME(Aerospike, scan);
                 HHVM_ME(Aerospike, scanApply);
                 HHVM_ME(Aerospike, scanInfo);
-                //VISHALB
                 HHVM_STATIC_ME(Aerospike, predicateEquals);
                 HHVM_STATIC_ME(Aerospike, predicateContains);
                 HHVM_STATIC_ME(Aerospike, predicateBetween);
                 HHVM_STATIC_ME(Aerospike, predicateRange);
                 HHVM_ME(Aerospike, query);
                 HHVM_ME(Aerospike, aggregate);
-                //VISHALB
                 HHVM_ME(Aerospike, errorno);
                 HHVM_ME(Aerospike, error);
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
