@@ -18,7 +18,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    bool scan_callback(const as_val *val_p, void *udata)
+    bool scan_query_callback(const as_val *val_p, void *udata)
     {
         if (!val_p) {
             return false;
@@ -30,7 +30,7 @@ namespace HPHP {
             return false;
         }
 
-        pthread_rwlock_wrlock(&scan_callback_mutex);
+        pthread_rwlock_wrlock(&scan_query_callback_mutex);
         if (g_context.isNull()) {
             hphp_session_init();
         }
@@ -48,7 +48,7 @@ namespace HPHP {
             do_continue = false;
         }
 
-        pthread_rwlock_unlock(&scan_callback_mutex);
+        pthread_rwlock_unlock(&scan_query_callback_mutex);
 
         return do_continue;
     }
@@ -167,6 +167,19 @@ namespace HPHP {
         return error.code;
     }
 
+    /*
+     *******************************************************************************************
+     * Function to construct the EQUALS and CONTAINS where predicate as required as argument
+     * in Query and Aggregate API from PHP
+     *
+     * @param where         Array type to be constructed as required predicate
+     * @param bin           Name of the BIN of type String
+     * @param value         Value of the BIN of type Integer or String
+     * @param index_type    Integer index type supported by aerospike
+     * @param isContains    flag to indicate the EQUALS or CONTAINS predicate
+     * @return true if success. Otherwise false.
+     *******************************************************************************************
+     */
     bool construct_Equals_Contains_Predicates(Array &where, const Variant &bin, const Variant &value, int64_t index_type/* = 0*/, bool isContains/* = false*/)
     {
         bool        isNull = false;
@@ -200,6 +213,20 @@ namespace HPHP {
         return isNull;
     }
 
+    /*
+     *******************************************************************************************
+     * Function to construct the BETWEEN and RANGE where predicate as required as argument
+     * in Query and Aggregate API from PHP
+     *
+     * @param where         Array type to be constructed as required predicate
+     * @param bin           Name of the BIN of type String
+     * @param min           Min value of type Integer or String
+     * @param max           Max value of type Integer or String
+     * @param index_type    Integer index type supported by aerospike
+     * @param isRange       flag to indicate the BETWEEN or RANGE predicate
+     * @return true if success. Otherwise false.
+     *******************************************************************************************
+     */
     bool construct_Between_Range_Predicates(Array &where, const Variant &bin, const Variant &min, const Variant &max, int64_t index_type/* = 0*/, bool isRange/* = false*/)
     {
         Array       val = Array::Create();
@@ -242,6 +269,20 @@ namespace HPHP {
         return isNull;
     }
 
+    /*
+     *******************************************************************************************
+     * Function to initialize as_query structure for calling aerospike_query_foreach() API
+     *
+     * @param query         An as_query pointer
+     * @param ns            Namespace to be queried
+     * @param set           Set to be queried
+     * @param where         predicates to be applyed to query
+     * @param bins          Array of Bins to be queried
+     * @param error         as_error reference to be populated by this function
+     *                      in case of error
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
     as_status initialize_query(as_query *query, const Variant &ns, const Variant &set, const Variant &where, const Variant &bins, as_error &error)
     {
         as_error_reset(&error);
@@ -299,6 +340,16 @@ namespace HPHP {
         return error.code;
     }
 
+    /*
+     *******************************************************************************************
+     * Function to validate where predicate for Query and Aggregate API
+     *
+     * @param predicate     predicate array to be validated
+     * @param error         as_error reference to be populated by this function
+     *                      in case of error
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
     as_status isPredicate(const Array &predicate, as_error &error)
     {
         as_error_reset(&error);
@@ -343,6 +394,18 @@ namespace HPHP {
         return error.code;
     }
 
+    /*
+     *******************************************************************************************
+     * Function to initialize where predicate for Query and Aggregate API
+     *
+     * @param query         Query object to be used for applying a where
+     *                      predicate
+     * @param predicate     where predicate to be applyed on query
+     * @param error         as_error reference to be populated by this function
+     *                      in case of error
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
     as_status initialize_where_predicate(as_query *query, const Array &predicate, as_error &error)
     {
         as_error_reset(&error);
@@ -436,6 +499,26 @@ namespace HPHP {
         return error.code;
     }
 
+    /*
+     *******************************************************************************************
+     * Function to initialize as_query structure for calling aerospike_query_foreach() API
+     *
+     * @param query             An as_query pointer
+     * @param ns                Namespace to be queried
+     * @param set               Set to be queried
+     * @param module            Module registered in DB
+     * @param function          Function defined in above registered module
+     * @param args              List of arguments to the above defined function
+     * @param static_pool       StaticPoolManager instance reference, to be used for
+     *                          the conversion lifecycle
+     * @param serializer_type   The serializer type to be used to support
+     *                          server-unsupported datatypes for the UDF's
+     *                          argument list.
+     * @param error             as_error reference to be populated by this function
+     *                          in case of error
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
     as_status initialize_aggregate(as_query *query, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error)
     {
         as_list     *args_list = NULL;
@@ -488,6 +571,17 @@ namespace HPHP {
         return error.code;
     }
 
+    /*
+     *******************************************************************************************
+     * Callback function for aggregate API
+     *
+     * @param val_p         An as_val of any type
+     * @param udata_p       foreach_callback_udata pointer which wraps us the PHP list
+     *                      to be appended to by this function and as_error reference
+     *                      to be populated in case of error.
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
     bool aggregate_callback(const as_val *val_p, void *udata)
     {
         bool        do_continue = true;
@@ -497,7 +591,7 @@ namespace HPHP {
             return false;
         }
 
-        pthread_rwlock_wrlock(&scan_callback_mutex);
+        pthread_rwlock_wrlock(&scan_query_callback_mutex);
         if (g_context.isNull()) {
             hphp_session_init();
         }
@@ -510,7 +604,7 @@ namespace HPHP {
         } else {
             udata_p->data.append(php_value);
         }
-        pthread_rwlock_unlock(&scan_callback_mutex);
+        pthread_rwlock_unlock(&scan_query_callback_mutex);
 
         return do_continue;
     }

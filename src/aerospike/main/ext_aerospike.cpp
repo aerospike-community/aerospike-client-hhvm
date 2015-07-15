@@ -20,7 +20,7 @@ namespace HPHP {
      */
     std::unordered_map<std::string, aerospike_ref *> persistent_list;
     pthread_rwlock_t connection_mutex;
-    pthread_rwlock_t scan_callback_mutex;
+    pthread_rwlock_t scan_query_callback_mutex;
 
 	ini_entries ini_entry;
     /*
@@ -818,7 +818,7 @@ namespace HPHP {
             if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error) &&
                     AEROSPIKE_OK == set_scan_policies(&scan, options, error)) {
-                aerospike_scan_foreach(data->as_ref_p->as_p, &error, &scan_policy, &scan, scan_callback, &udata);
+                aerospike_scan_foreach(data->as_ref_p->as_p, &error, &scan_policy, &scan, scan_query_callback, &udata);
             }
         }
 
@@ -941,6 +941,8 @@ namespace HPHP {
     }
     /* }}} */
 
+    /* {{{ proto array Aerospike::predicateEquals( string bin, int|string val )
+       Helper which builds the 'WHERE EQUALS' predicate */
     Variant HHVM_STATIC_METHOD(Aerospike, predicateEquals, const Variant &bin, const Variant &value)
     {
         Array       where = Array::Create();
@@ -954,7 +956,10 @@ namespace HPHP {
             return where;
         }
     }
+    /* }}} */
 
+    /* {{{ proto array Aerospike::predicateContains( string bin, int index_type, int|string val )
+       Helper which builds the 'WHERE CONTAINS' predicate */
     Variant HHVM_STATIC_METHOD(Aerospike, predicateContains, const Variant &bin, const Variant &index_type, const Variant &value)
     {
         Array       where = Array::Create();
@@ -973,7 +978,10 @@ namespace HPHP {
             return where;
         }
     }
+    /* }}} */
 
+    /* {{{ proto array Aerospike::predicateBetween( string bin, int min, int max )
+       Helper which builds the 'WHERE BETWEEN' predicate */
     Variant HHVM_STATIC_METHOD(Aerospike, predicateBetween, const Variant &bin, const Variant &min, const Variant &max)
     {
         Array       where = Array::Create();
@@ -987,7 +995,10 @@ namespace HPHP {
             return where;
         }
     }
+    /* }}} */
 
+    /* {{{ proto array Aerospike::predicateRange( string bin, int index_type, int|string min, int|string max )
+       Helper which builds the 'WHERE RANGE' predicate */
     Variant HHVM_STATIC_METHOD(Aerospike, predicateRange, const Variant &bin, const Variant &index_type, const Variant &min, const Variant &max)
     {
         Array       where = Array::Create();
@@ -1006,7 +1017,10 @@ namespace HPHP {
             return where;
         }
     }
+    /* }}} */
 
+    /* {{{ proto int Aerospike::query( string ns, string set, array where, callback record_cb [, array select [, array options ]] )
+       Queries a secondary index on a set for records matching the where predicate  */
     int64_t HHVM_METHOD(Aerospike, query, const Variant &ns, const Variant &set, const Variant &where, const Variant &function, const Variant &bins, const Variant &options)
     {
         VMRegAnchor         _;
@@ -1035,7 +1049,7 @@ namespace HPHP {
             query_initialized = true;
             if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
-                aerospike_query_foreach(data->as_ref_p->as_p, &error, &query_policy, &query, scan_callback, &udata);
+                aerospike_query_foreach(data->as_ref_p->as_p, &error, &query_policy, &query, scan_query_callback, &udata);
             }
         }
 
@@ -1049,7 +1063,10 @@ namespace HPHP {
 
         return error.code;
     }
+    /* }}} */
 
+    /* {{{ proto int Aerospike::aggregate( string ns, string set, array where, string module, string function, array args, mixed &returned [, array options ] )
+       Applies a stream UDF to the records matching a query and aggregates the results  */
     int64_t HHVM_METHOD(Aerospike, aggregate, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, VRefParam result, const Variant &options)
     {
         VMRegAnchor         _;
@@ -1098,6 +1115,7 @@ namespace HPHP {
 
         return error.code;
     }
+    /* }}} */
 
     /* {{{ proto string Aerospike::error ( void )
        Displays the error message associated with the last operation */
@@ -1204,7 +1222,7 @@ namespace HPHP {
                         &ini_entry.lua_user_path);
                 Native::registerNativeDataInfo<Aerospike>(s_Aerospike.get());
                 pthread_rwlock_init(&connection_mutex, NULL);
-                pthread_rwlock_init(&scan_callback_mutex, NULL);
+                pthread_rwlock_init(&scan_query_callback_mutex, NULL);
 
                 loadSystemlib();
             }
