@@ -497,6 +497,7 @@ namespace HPHP {
     int64_t HHVM_METHOD(Aerospike, get, const Array& php_key, VRefParam php_rec,
             const Variant& filter_bins, const Variant& options)
     {
+        VMRegAnchor _;
         auto                data = Native::data<Aerospike>(this_);
         as_status           status = AEROSPIKE_OK;
         as_error            error;
@@ -1101,6 +1102,8 @@ namespace HPHP {
             {
                 as_error error;
                 aerospike_ref *map_entry = NULL;
+                Aerospike::serializer.releaseForSweep();
+                Aerospike::deserializer.releaseForSweep();
 
                 as_error_init(&error);
 
