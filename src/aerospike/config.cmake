@@ -4,7 +4,8 @@ HHVM_EXTENSION(aerospike-hhvm
     main/policy.cpp
     main/helper.cpp
     main/batch_op_manager.cpp
-    main/scan_operation.cpp)
+    main/scan_operation.cpp
+    main/udf_operations.cpp)
 HHVM_DEFINE(aerospike-hhvm -DAEROSPIKE_C_CHECK)
 include_directories(include)
 target_link_libraries(aerospike-hhvm /usr/lib/libaerospike.so)
