@@ -74,23 +74,21 @@ namespace HPHP {
             }
 
             memcpy(copy_filepath + user_path_len + 1, filename, strlen(filename));
-
-            fileW_p = fopen(copy_filepath, "r");
-            if(!fileW_p && errno == ENOENT) {
-                fileW_p = fopen(copy_filepath, "w");
-                if(!fileW_p) {
-                    if (errno == ENOENT) {
-                        return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND, "Cannot create script file due to no such directory");
-                    } else if (errno == EACCES) {
-                        return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND, "Cannot create script file due to invalid permissions");
-                    } else {
-                        return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND, "Cannot create script file");
-                    }
+            fileW_p = fopen(copy_filepath, "w");
+            if(!fileW_p) {
+                if (errno == ENOENT) {
+                    return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND,
+                            "Cannot create script file due to no such directory");
+                } else if (errno == EACCES) {
+                    return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND,
+                            "Cannot create script file due to invalid permissions");
+                } else {
+                    return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND, "Cannot create script file");
                 }
+            }
 
-                if (0 >= (int) fwrite(bytes_p, size, 1, fileW_p)) {
-                    return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND, "unable to write to script file");
-                }
+            if (0 >= (int) fwrite(bytes_p, size, 1, fileW_p)) {
+                return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND, "unable to write to script file");
             }
 
             as_bytes_init_wrap(udf_content_p, bytes_p, size, false);
@@ -235,8 +233,8 @@ namespace HPHP {
             as_error_update(&error, AEROSPIKE_ERR_PARAM, "Lua function arguments should be of type array");
         }
         php_udf_args = args.toArray();
-        if (!args.isNull() && php_list_to_as_list(php_udf_args, &args_list, static_pool,
-                    serializer_type, error)) {
+        if (!args.isNull() && (AEROSPIKE_OK != php_list_to_as_list(php_udf_args, &args_list, static_pool,
+                    serializer_type, error))) {
             //Argument list creation for UDF failed
             return error.code;
         }
