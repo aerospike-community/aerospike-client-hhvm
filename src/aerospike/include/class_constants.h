@@ -115,7 +115,14 @@ namespace HPHP {
         { AS_OPERATOR_INCR                      ,   "OPERATOR_INCR"                     },
         { AS_OPERATOR_PREPEND                   ,   "OPERATOR_PREPEND"                  },
         { AS_OPERATOR_APPEND                    ,   "OPERATOR_APPEND"                   },
-        { AS_OPERATOR_TOUCH                     ,   "OPERATOR_TOUCH"                    }
+        { AS_OPERATOR_TOUCH                     ,   "OPERATOR_TOUCH"                    },
+        { AS_INDEX_TYPE_DEFAULT                 ,   "INDEX_TYPE_DEFAULT"                },
+        { AS_INDEX_TYPE_LIST                    ,   "INDEX_TYPE_LIST"                   },
+        { AS_INDEX_TYPE_MAPKEYS                 ,   "INDEX_TYPE_MAPKEYS"                },
+        { AS_INDEX_TYPE_MAPVALUES               ,   "INDEX_TYPE_MAPVALUES"              },
+        { AS_INDEX_STRING                       ,   "INDEX_STRING"                      },
+        { AS_INDEX_NUMERIC                      ,   "INDEX_NUMERIC"                     }
+
 };
 
 #define EXTENSION_CONSTANTS_SIZE (sizeof(extension_constants)/sizeof(aerospike_constants))
