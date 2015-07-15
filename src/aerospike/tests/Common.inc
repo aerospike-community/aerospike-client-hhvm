@@ -177,7 +177,9 @@ abstract class AerospikeTestCommon extends ASTestFramework
         return true;
     }
 
-    protected function ensureIndex($ns, $set, $bin, $index_name, $index_type) {
+    protected function ensureIndex($ns, $set, $bin, $index_name, $index_type, $bin_data_type) {
+        /*
+            Temp changes : info() API is not yet implemented
         $host1 = array('addr' => AEROSPIKE_CONFIG_NAME, 'port' => AEROSPIKE_CONFIG_PORT);
         $status = $this->db->info("sindex/$ns/$index_name", $response, $host1);
         if ($status !== Aerospike::OK) {
@@ -185,6 +187,8 @@ abstract class AerospikeTestCommon extends ASTestFramework
         } else if (strrpos($response, 'NO INDEX') !== false) {
             return $this->db->createIndex($ns, $set, $bin, $index_type, $index_name);
         }
+         */
+        $status = $this->db->addIndex($ns, $set, $bin, $index_name, $index_type, $bin_data_type);
         return Aerospike::OK;
     }
 

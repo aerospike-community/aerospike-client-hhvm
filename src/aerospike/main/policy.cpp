@@ -350,6 +350,19 @@ namespace HPHP {
                     }
                 }
             }
+        } else if(strcmp(this->type, "apply") == 0) {
+            as_policy_apply_copy(&(this->config_p->policies.apply), CURRENT_POLICY(apply));
+            if (options_variant.isArray()) {
+                Array  options = options_variant.toArray();
+                if (options.exists(OPT_WRITE_TIMEOUT)) {
+                    if (options[OPT_WRITE_TIMEOUT].isInteger()) {
+                        POLICY_SET_FIELD(apply, timeout, options[OPT_WRITE_TIMEOUT].toInt64(), uint32_t);
+                    } else {
+                        as_error_update(&error, AEROSPIKE_ERR_CLIENT, "Unable to set policy: Invalid Value for OPT_READ_TIMEOUT");
+                    }
+                }
+            }
+
         } else {
             return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Invalid type of policy holder");

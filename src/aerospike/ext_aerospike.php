@@ -32,6 +32,16 @@ class Aerospike {
     <<__Native>>
         public function getKeyDigest(mixed $ns, mixed $set, mixed $key): string;
     <<__Native>>
+        public function register(mixed $path, mixed $module, mixed $language = Aerospike::UDF_TYPE_LUA, mixed $options = NULL): int;
+    <<__Native>>
+        public function deregister(mixed $module, mixed $options = NULL): int;
+    <<__Native>>
+        public function getRegistered(mixed $module, mixed& $code, mixed $language = Aerospike::UDF_TYPE_LUA, mixed $options = NULL): int;
+    <<__Native>>
+        public function listRegistered(mixed& $modules, mixed $language = Aerospike::UDF_TYPE_LUA, mixed $options = NULL): int;
+    <<__Native>>
+        public function apply(array $key, mixed $module, mixed $function, mixed $args = NULL, mixed &$returned = NULL, mixed $options = NULL): int;
+    <<__Native>>
         public function scan(mixed $ns, mixed $set, mixed $function, mixed $bins = NULL, mixed $options = NULL): int;
     <<__Native>>
         public function scanApply(mixed $ns, mixed $set, mixed $module, mixed $function, mixed $args, mixed &$scan_id, mixed $options = NULL): int;

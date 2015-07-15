@@ -69,6 +69,8 @@ namespace HPHP {
     const StaticString s_progress_pct("progress_pct");
     const StaticString s_records_scanned("records_scanned");
     const StaticString s_status("status");
+    const StaticString s_udf_module_name("name");
+    const StaticString s_udf_module_type("type");
 
     /*
      ************************************************************************************
@@ -98,35 +100,6 @@ namespace HPHP {
             void create_new_host_entry(as_config& config, as_error& error);
             void iterate_hosts_add_entry(as_config& config, int matched_host_id);
     };
-
-    void HHVM_METHOD(Aerospike, __construct, const Array& config,
-            bool persistent_connection, const Variant& options);
-    bool HHVM_METHOD(Aerospike, isConnected);
-    int64_t HHVM_METHOD(Aerospike, close);
-    int64_t HHVM_METHOD(Aerospike, reconnect);
-    int64_t HHVM_METHOD(Aerospike, put, const Array& php_key,
-            const Array& php_rec, int64_t ttl, const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, get, const Array& php_key,
-            VRefParam php_rec, const Variant& filter_bins,
-            const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, getMany, const Array& php_keys,
-            VRefParam php_records, const Variant& filter_bins,
-            const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, operate, const Array& php_key,
-            const Array& operations, VRefParam returned,
-            const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, remove, const Array& php_key,
-            const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, removeBin, const Array& php_key,
-            const Array& bins, const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, exists, const Array& php_key,
-            VRefParam metadata, const Variant& options);
-    int64_t HHVM_METHOD(Aerospike, existsMany, const Array& php_keys,
-            VRefParam metadata, const Variant& options);
-    String HHVM_METHOD(Aerospike, getKeyDigest, const Variant& ns,
-            const Variant& set, const Variant& primary_key);
-    int64_t HHVM_METHOD(Aerospike, errorno);
-    String HHVM_METHOD(Aerospike, error);
 
 } // namespace HPHP
 #endif /* end of __EXT_AEROSPIKE_H__ */
