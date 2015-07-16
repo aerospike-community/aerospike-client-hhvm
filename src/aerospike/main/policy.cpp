@@ -13,21 +13,37 @@ namespace HPHP {
      * as_config.
      *******************************************************************************************
      */
-    PolicyManager::PolicyManager(as_config *config_p) {
+    PolicyManager::PolicyManager(as_config *config_p)
+    {
         this->config_p = config_p;
         this->type = "config";
     }
 
     /*
      *******************************************************************************************
-     * This constructor is used by all Aerospike APIs to set method level policies.
+     * This method is used by all Aerospike APIs to set method level policies.
      *******************************************************************************************
      */
-    PolicyManager::PolicyManager(void *policy_p, char *type, as_config *config_p) {
-        this->policy_holder = policy_p;
-        this->type = type;
-        this->config_p = config_p;
-        initialize_policy();
+    as_status PolicyManager::initPolicyManager(void *policy_p, char *type, as_config *config_p, as_error& error)
+    {
+        bool        isInit = false;
+        as_error_reset(&error);
+
+        if (!policy_p || !type || !config_p) {
+            this->policy_holder = policy_p;
+            this->type = type;
+            this->config_p = config_p;
+            isInit = initialize_policy();
+            if (isInit == false) {
+                as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                        "Invalid policy type");
+            }
+        } else {
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "config/type/policy holder is null");
+        }
+
+        return error.code;
     }
 
     /*
@@ -35,34 +51,33 @@ namespace HPHP {
      * Function to initialize the policy with csdk defaults depending on policy type.
      *******************************************************************************************
      */
-    void PolicyManager::initialize_policy() {
-        if (this->type) {
-            if (strcmp("read", this->type) == 0) {
-                POLICY_INIT(read);
-            } else if (strcmp("write", this->type) == 0) {
-                POLICY_INIT(write);
-            } else if (strcmp("operate", this->type) == 0) {
-                POLICY_INIT(operate);
-            } else if (strcmp("remove", this->type) == 0) {
-                POLICY_INIT(remove);
-            } else if (strcmp("info", this->type) == 0) {
-                POLICY_INIT(info);
-            } else if (strcmp("scan", this->type) == 0) {
-                POLICY_INIT(scan);
-            } else if (strcmp("query", this->type) == 0) {
-                POLICY_INIT(query);
-            } else if (strcmp("apply", this->type) == 0) {
-                POLICY_INIT(apply);
-            } else if (strcmp("admin", this->type) == 0) {
-                POLICY_INIT(admin);
-            } else if (strcmp("batch", this->type) == 0) {
-                POLICY_INIT(batch);
-            } else {
-                /* TBD: handle failure */
-            }
+    bool PolicyManager::initialize_policy()
+    {
+        if (strcmp("read", this->type) == 0) {
+            POLICY_INIT(read);
+        } else if (strcmp("write", this->type) == 0) {
+            POLICY_INIT(write);
+        } else if (strcmp("operate", this->type) == 0) {
+            POLICY_INIT(operate);
+        } else if (strcmp("remove", this->type) == 0) {
+            POLICY_INIT(remove);
+        } else if (strcmp("info", this->type) == 0) {
+            POLICY_INIT(info);
+        } else if (strcmp("scan", this->type) == 0) {
+            POLICY_INIT(scan);
+        } else if (strcmp("query", this->type) == 0) {
+            POLICY_INIT(query);
+        } else if (strcmp("apply", this->type) == 0) {
+            POLICY_INIT(apply);
+        } else if (strcmp("admin", this->type) == 0) {
+            POLICY_INIT(admin);
+        } else if (strcmp("batch", this->type) == 0) {
+            POLICY_INIT(batch);
         } else {
-            /* TBD: handle failure */
+            return false;
         }
+
+        return true;
     }
 
     /*
@@ -70,7 +85,8 @@ namespace HPHP {
      * Function to copy INI entries from php.ini to as_config policies.
      *******************************************************************************************
      */
-    as_status PolicyManager::copy_INI_entries_to_config(as_error& error) {
+    as_status PolicyManager::copy_INI_entries_to_config(as_error& error)
+    {
         std::string ini_value;
         uint32_t val = 0;
 
@@ -127,7 +143,8 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status PolicyManager::set_generation_value(uint16_t *gen_value_p, const Variant& options_variant, as_error& error) {
+    as_status PolicyManager::set_generation_value(uint16_t *gen_value_p, const Variant& options_variant, as_error& error)
+    {
         as_error_reset(&error);
 
         if (!gen_value_p) {
@@ -162,12 +179,13 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status PolicyManager::set_policy(int16_t *serializer_value, int16_t global_serializer_val,const Variant& options_variant, as_error& error) {
+    as_status PolicyManager::set_policy(int16_t *serializer_value, int16_t global_serializer_val,const Variant& options_variant, as_error& error)
+    {
         as_error_reset(&error);
 
-        if (!this->type || !this->policy_holder) {
+        if (!this->type || !this->policy_holder || !this->config_p) {
             return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
-                    "type/policy holder is null");
+                    "config/type/policy holder is null");
         }
 
         if (!options_variant.isNull() && !options_variant.isArray()) {
@@ -391,9 +409,19 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status PolicyManager::set_config_policies(const Variant& options_variant, as_error& error) {
+    as_status PolicyManager::set_config_policies(const Variant& options_variant, as_error& error)
+    {
         as_error_reset(&error);
+
         copy_INI_entries_to_config(error);
+        if (error.code != AEROSPIKE_OK) {
+            return error.code;
+        }
+
+        if (!this->config_p) {
+            return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "config is null");
+        }
 
         if (!options_variant.isNull() && !options_variant.isArray()) {
             return as_error_update(&error, AEROSPIKE_ERR_CLIENT,

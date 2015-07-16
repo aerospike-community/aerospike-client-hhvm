@@ -66,7 +66,8 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status initialize_scan(as_scan *scan, const Variant &ns, const Variant &set, const Variant &bins, as_error &error)
+    as_status initialize_scan(as_scan *scan, const Variant &ns, const Variant &set,
+            const Variant &bins, as_error &error)
     {
         as_error_reset(&error);
 
@@ -130,7 +131,9 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status initialize_scanApply(as_scan *scan, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error)
+    as_status initialize_scanApply(as_scan *scan, const Variant &ns, const Variant &set,
+            const Variant &module, const Variant &function, const Variant &args,
+            StaticPoolManager &static_pool, int16_t serializer_type, as_error &error)
     {
         as_list     *args_list = NULL;
         Array       php_args;
@@ -143,7 +146,8 @@ namespace HPHP {
         } else if (!set.isNull() && (!set.isString() || set.toString().empty())) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Set must be NULL or non empty string");
-        } else if (!module.isString() || module.toString().empty() || !function.isString() || function.toString().empty()) {
+        } else if (!module.isString() || module.toString().empty() ||
+                !function.isString() || function.toString().empty()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Module/Function must not be empty");
         } else if (!args.isNull() && !args.isArray()) {
@@ -156,9 +160,11 @@ namespace HPHP {
             if (!args.isNull()) {
                 php_args = args.toArray();
             }
-            if (!args.isNull() && php_list_to_as_list(php_args, &args_list, static_pool, serializer_type, error)) {
+            if (!args.isNull() && php_list_to_as_list(php_args, &args_list,
+                        static_pool, serializer_type, error)) {
                 //Argument list creation for UDF failed
-            } else if (!as_scan_apply_each(scan, module.toString().c_str(), function.toString().c_str(), args_list)) {
+            } else if (!as_scan_apply_each(scan, module.toString().c_str(),
+                        function.toString().c_str(), args_list)) {
                 as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Unable to initiate background scan : UDF apply failed");
             }
@@ -180,7 +186,8 @@ namespace HPHP {
      * @return true if success. Otherwise false.
      *******************************************************************************************
      */
-    bool construct_Equals_Contains_Predicates(Array &where, const Variant &bin, const Variant &value, int64_t index_type/* = 0*/, bool isContains/* = false*/)
+    bool construct_Equals_Contains_Predicates(Array &where, const Variant &bin, const Variant &value,
+            int64_t index_type/* = 0*/, bool isContains/* = false*/)
     {
         bool        isNull = false;
 
@@ -227,7 +234,8 @@ namespace HPHP {
      * @return true if success. Otherwise false.
      *******************************************************************************************
      */
-    bool construct_Between_Range_Predicates(Array &where, const Variant &bin, const Variant &min, const Variant &max, int64_t index_type/* = 0*/, bool isRange/* = false*/)
+    bool construct_Between_Range_Predicates(Array &where, const Variant &bin, const Variant &min,
+            const Variant &max, int64_t index_type/* = 0*/, bool isRange/* = false*/)
     {
         Array       val = Array::Create();
         bool        isNull = false;
@@ -235,7 +243,8 @@ namespace HPHP {
         if (!bin.isString() || bin.toString().empty()) {
             //Bin name must be non empty string
             isNull = true;
-        } else if (!isRange && ((!min.isNull() && !min.isInteger() && !min.isBoolean()) || (!max.isNull() && !max.isInteger() && !min.isBoolean()))) {
+        } else if (!isRange && ((!min.isNull() && !min.isInteger() && !min.isBoolean()) ||
+                    (!max.isNull() && !max.isInteger() && !min.isBoolean()))) {
             //Between
             //min and max must be integers
             isNull = true;
@@ -283,7 +292,8 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status initialize_query(as_query *query, const Variant &ns, const Variant &set, const Variant &where, const Variant &bins, as_error &error)
+    as_status initialize_query(as_query *query, const Variant &ns, const Variant &set,
+            const Variant &where, const Variant &bins, as_error &error)
     {
         as_error_reset(&error);
 
@@ -354,9 +364,11 @@ namespace HPHP {
     {
         as_error_reset(&error);
 
-        if (predicate.exists(s_bin) && predicate.exists(s_index_type) && predicate.exists(s_op) && predicate.exists(s_val)) {
+        if (predicate.exists(s_bin) && predicate.exists(s_index_type) &&
+                predicate.exists(s_op) && predicate.exists(s_val)) {
             //Contains or Range predicates
-        } else if (predicate.exists(s_bin) && predicate.exists(s_op) && predicate.exists(s_val)) {
+        } else if (predicate.exists(s_bin) && predicate.exists(s_op) &&
+                predicate.exists(s_val)) {
             //Equals or Between predicates
         } else {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
@@ -519,7 +531,9 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status initialize_aggregate(as_query *query, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, StaticPoolManager &static_pool, int16_t serializer_type, as_error &error)
+    as_status initialize_aggregate(as_query *query, const Variant &ns, const Variant &set,
+            const Variant &where, const Variant &module, const Variant &function, const Variant &args,
+            StaticPoolManager &static_pool, int16_t serializer_type, as_error &error)
     {
         as_list     *args_list = NULL;
         Array       php_args;
@@ -535,7 +549,8 @@ namespace HPHP {
         } else if (!where.isNull() && !where.isArray()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Predicate must be an Array containing the keys 'bin', ['index_type',] 'op', and 'val'");
-        } else if (!module.isString() || module.toString().empty() || !function.isString() || function.toString().empty()) {
+        } else if (!module.isString() || module.toString().empty() ||
+                !function.isString() || function.toString().empty()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "Module/Function must not be empty");
         } else if (!args.isNull() && !args.isArray()) {
@@ -559,9 +574,11 @@ namespace HPHP {
                 if (!args.isNull()) {
                     php_args = args.toArray();
                 }
-                if (!args.isNull() && php_list_to_as_list(php_args, &args_list, static_pool, serializer_type, error)) {
+                if (!args.isNull() && php_list_to_as_list(php_args, &args_list,
+                            static_pool, serializer_type, error)) {
                     //Argument list creation for UDF failed
-                } else if (!as_query_apply(query, module.toString().c_str(), function.toString().c_str(), args_list)) {
+                } else if (!as_query_apply(query, module.toString().c_str(),
+                            function.toString().c_str(), args_list)) {
                     as_error_update(&error, AEROSPIKE_ERR_PARAM,
                             "Unable to initiate aggregate : UDF apply failed");
                 }

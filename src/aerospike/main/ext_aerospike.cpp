@@ -396,8 +396,7 @@ namespace HPHP {
         as_policy_write     write_policy;
         bool                key_initialized = false;
         int16_t             serializer_option = 0;
-        PolicyManager       policy_manager(&write_policy, "write",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -409,7 +408,9 @@ namespace HPHP {
                     "put: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(&serializer_option,
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&write_policy,
+                        "write", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(&serializer_option,
                         data->serializer_value, options, error)) {
                 if (AEROSPIKE_OK == php_record_to_as_record(php_rec, rec,
                             ttl, static_pool, serializer_option, error)) {
@@ -445,8 +446,7 @@ namespace HPHP {
         as_index_task   task;
         as_policy_info  info_policy;
         as_status       aerospike_status;
-        PolicyManager   policy_manager(&info_policy, "info",
-                &data->as_ref_p->as_p->config);
+        PolicyManager   policy_manager;
        
         as_error_init(&error);
 
@@ -456,8 +456,10 @@ namespace HPHP {
         } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "addIndex: connection not established");
-        } else if (AEROSPIKE_OK == policy_manager.set_policy(NULL, 
-                    data->serializer_value, options, error)){
+        } else if (AEROSPIKE_OK == policy_manager.initPolicyManager(&info_policy,
+                    "info", &data->as_ref_p->as_p->config, error) &&
+                AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                    data->serializer_value, options, error)) {
             aerospike_status = aerospike_index_create_complex(data->as_ref_p->as_p, 
                         &error, &task, &info_policy, ns.toString().c_str(), set.toString().c_str(), 
                         bin.toString().c_str(), name.toString().c_str(), 
@@ -482,8 +484,7 @@ namespace HPHP {
         auto            data = Native::data<Aerospike>(this_);
         as_error        error;
         as_policy_info  info_policy;
-        PolicyManager   policy_manager(&info_policy, "info", 
-                &data->as_ref_p->as_p->config);
+        PolicyManager   policy_manager;
 
         as_error_init(&error);
 
@@ -493,7 +494,9 @@ namespace HPHP {
         } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "dropIndex:: connection not established");
-        } else if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+        } else if (AEROSPIKE_OK == policy_manager.initPolicyManager(&info_policy,
+                    "info", &data->as_ref_p->as_p->config, error) &&
+                AEROSPIKE_OK == policy_manager.set_policy(NULL,
                     data->serializer_value, options, error)){
             aerospike_index_remove( data->as_ref_p->as_p, 
                         &error, &info_policy,ns.toString().c_str(), name.toString().c_str());
@@ -519,9 +522,7 @@ namespace HPHP {
         as_record           *rec_p = NULL;
         as_policy_read      read_policy;
         bool                key_initialized = false;
-        PolicyManager       policy_manager(&read_policy, "read",
-                &data->as_ref_p->as_p->config);
-
+        PolicyManager       policy_manager;
 
         if (!data->as_ref_p || !data->as_ref_p->as_p) {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
@@ -531,8 +532,10 @@ namespace HPHP {
                     "get: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value,
-                        options, error)) {
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&read_policy,
+                        "read", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
                 if (!filter_bins.isNull() && !filter_bins.isArray()) {
                     as_error_update(&error, AEROSPIKE_ERR_PARAM,
                             "Filter bins must be of type an Array");
@@ -575,8 +578,7 @@ namespace HPHP {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_batch     batch_policy;
-        PolicyManager       policy_manager(&batch_policy, "batch",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -589,7 +591,9 @@ namespace HPHP {
         } else {
             try {
                 BatchOpManager batch_op_manager(php_keys);
-                if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                if (AEROSPIKE_OK == policy_manager.initPolicyManager(&batch_policy,
+                            "batch", &data->as_ref_p->as_p->config, error) &&
+                        AEROSPIKE_OK == policy_manager.set_policy(NULL,
                             data->serializer_value, options, error)) {
                     batch_op_manager.execute_batch_get(data->as_ref_p->as_p,
                             php_records, filter_bins, batch_policy, error);
@@ -623,8 +627,7 @@ namespace HPHP {
         as_policy_operate   operate_policy;
         int16_t             serializer_option = 0;
         bool                key_initialized = false;
-        PolicyManager       policy_manager(&operate_policy, "operate",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -636,7 +639,9 @@ namespace HPHP {
                     "operate: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(&serializer_option,
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&operate_policy,
+                        "operate", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(&serializer_option,
                         data->serializer_value, options, error)) {
                 if (AEROSPIKE_OK == php_operations_to_as_operations(php_operations,
                             operations, static_pool, serializer_option, error)) {
@@ -676,8 +681,7 @@ namespace HPHP {
         as_key              key;
         as_policy_remove    remove_policy;
         bool                key_initialized = false;
-        PolicyManager       policy_manager(&remove_policy, "remove",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -689,7 +693,10 @@ namespace HPHP {
                     "remove: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value, options, error)) {
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&remove_policy,
+                        "remove", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
                 policy_manager.set_generation_value(&remove_policy.generation,
                         options, error);
                 aerospike_key_remove(data->as_ref_p->as_p, &error,
@@ -719,8 +726,7 @@ namespace HPHP {
         as_record           record;
         as_policy_write     write_policy;
         bool                key_initialized = false;
-        PolicyManager       policy_manager(&write_policy, "write",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -732,7 +738,10 @@ namespace HPHP {
                     "removeBin: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value, options, error)) {
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&write_policy,
+                        "write", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
                 as_record_inita(&record, bins.size());
                 policy_manager.set_generation_value(&record.gen,
                         options, error);
@@ -766,8 +775,7 @@ namespace HPHP {
         as_record           *record_p = NULL;
         as_policy_read      read_policy;
         bool                key_initialized = false;
-        PolicyManager       policy_manager(&read_policy, "read",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -779,7 +787,10 @@ namespace HPHP {
                     "exists: connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value, options, error)) {
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&read_policy,
+                        "read", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
                 if (AEROSPIKE_OK == aerospike_key_exists(data->as_ref_p->as_p,
                             &error, &read_policy, &key, &record_p)) {
                     Array php_metadata = Array::Create();
@@ -809,8 +820,7 @@ namespace HPHP {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_batch     batch_policy;
-        PolicyManager       policy_manager(&batch_policy, "batch",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -823,7 +833,9 @@ namespace HPHP {
         } else {
             try {
                 BatchOpManager batch_op_manager(php_keys);
-                if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                if (AEROSPIKE_OK == policy_manager.initPolicyManager(&batch_policy,
+                            "batch", &data->as_ref_p->as_p->config, error) &&
+                        AEROSPIKE_OK == policy_manager.set_policy(NULL,
                             data->serializer_value, options, error)) {
                     batch_op_manager.execute_batch_exists(data->as_ref_p->as_p,
                             metadata, batch_policy, error);
@@ -871,6 +883,7 @@ namespace HPHP {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_info      info_policy;
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -881,9 +894,9 @@ namespace HPHP {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "Register : Connection not established");
         } else {
-            PolicyManager policy_manager(&info_policy, "info", &data->as_ref_p->as_p->config);
-
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&info_policy,
+                        "info", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
                 register_udf_module(data->as_ref_p->as_p, path, module, language, &info_policy, error);
             }
@@ -904,6 +917,7 @@ namespace HPHP {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_info      info_policy;
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -914,8 +928,9 @@ namespace HPHP {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "Deregister : Connection not established");
         } else {
-            PolicyManager policy_manager(&info_policy, "info", &data->as_ref_p->as_p->config);
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&info_policy,
+                        "info", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
                 remove_udf_module(data->as_ref_p->as_p, module, &info_policy, error);
             }
@@ -937,6 +952,7 @@ namespace HPHP {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_info      info_policy;
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -947,9 +963,10 @@ namespace HPHP {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "getRegistered : Connection not established");
         } else {
-            PolicyManager policy_manager(&info_policy, "info", &data->as_ref_p->as_p->config);
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value,
-                        options, error)) {
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&info_policy,
+                        "info", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
                 get_registered_udf_module_code(data->as_ref_p->as_p, module, module_code, language,
                         &info_policy, error);
             }
@@ -970,6 +987,7 @@ namespace HPHP {
         auto                data = Native::data<Aerospike>(this_);
         as_error            error;
         as_policy_info      info_policy;
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -980,9 +998,10 @@ namespace HPHP {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "listRegistered : Connection not established");
         } else {
-            PolicyManager policy_manager(&info_policy, "info", &data->as_ref_p->as_p->config);
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL, data->serializer_value,
-                        options, error)) {
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&info_policy,
+                        "info", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
+                        data->serializer_value, options, error)) {
                 Array temp_modules = Array::Create();
                 if (AEROSPIKE_OK == list_registered_udf_modules(data->as_ref_p->as_p, temp_modules, language,
                             &info_policy, error)) {
@@ -1010,6 +1029,7 @@ namespace HPHP {
         int16_t             serializer_type = SERIALIZER_PHP;
         StaticPoolManager   static_pool;
         bool                key_initialized = false;
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -1021,8 +1041,9 @@ namespace HPHP {
                     "Deregister : Connection not established");
         } else if (AEROSPIKE_OK == php_key_to_as_key(php_key, key, error)) {
             key_initialized = true;
-            PolicyManager policy_manager(&apply_policy, "apply", &data->as_ref_p->as_p->config);
-            if (AEROSPIKE_OK == policy_manager.set_policy(&serializer_type,
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&apply_policy,
+                        "apply", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(&serializer_type,
                         data->serializer_value, options, error)) {
                 aerospike_udf_apply(data->as_ref_p->as_p, key, module, function, args,
                         &apply_policy, static_pool, serializer_type, returned_value, error);
@@ -1043,7 +1064,8 @@ namespace HPHP {
 
     /* {{{ proto int Aerospike::scan( string ns, string set, callback record_cb * [, array select [, array options ]] )
        Returns all the records in a set to a callback method  */
-    int64_t HHVM_METHOD(Aerospike, scan, const Variant &ns, const Variant &set, const Variant &function, const Variant &bins, const Variant &options)
+    int64_t HHVM_METHOD(Aerospike, scan, const Variant &ns, const Variant &set, const Variant &function,
+            const Variant &bins, const Variant &options)
     {
         VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
@@ -1051,8 +1073,7 @@ namespace HPHP {
         as_scan             scan;
         as_policy_scan      scan_policy;
         bool                scan_initialized = false;
-        PolicyManager       policy_manager(&scan_policy, "scan",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         foreach_callback_user_udata      udata(function, error);
 
@@ -1069,10 +1090,13 @@ namespace HPHP {
                     "Parameter 3 must be a function object");
         } else if (AEROSPIKE_OK == initialize_scan(&scan, ns, set, bins, error)) {
             scan_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&scan_policy,
+                        "scan", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error) &&
                     AEROSPIKE_OK == set_scan_policies(&scan, options, error)) {
-                aerospike_scan_foreach(data->as_ref_p->as_p, &error, &scan_policy, &scan, scan_query_callback, &udata);
+                aerospike_scan_foreach(data->as_ref_p->as_p, &error,
+                        &scan_policy, &scan, scan_query_callback, &udata);
             }
         }
 
@@ -1090,7 +1114,8 @@ namespace HPHP {
 
     /* {{{ proto int Aerospike::scanApply( string ns, string set, string module, * string function, array args, int &scan_id [, array options ] )
        Applies a record UDF to each record of a set using a background scan  */
-    int64_t HHVM_METHOD(Aerospike, scanApply, const Variant &ns, const Variant &set, const Variant &module, const Variant &function, const Variant &args, VRefParam scan_id, const Variant &options)
+    int64_t HHVM_METHOD(Aerospike, scanApply, const Variant &ns, const Variant &set, const Variant &module,
+            const Variant &function, const Variant &args, VRefParam scan_id, const Variant &options)
     {
         VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
@@ -1103,10 +1128,8 @@ namespace HPHP {
         bool                scan_initialized = false;
         bool                is_wait = true;
         int16_t             serializer_type = SERIALIZER_PHP;
-        PolicyManager       policy_manager_scan(&scan_policy, "scan",
-                &data->as_ref_p->as_p->config);
-        PolicyManager       policy_manager_info(&info_policy, "info",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager_scan;
+        PolicyManager       policy_manager_info;
 
         as_error_init(&error);
 
@@ -1119,17 +1142,22 @@ namespace HPHP {
         /*} else if (scan_id.isNull()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "scan_id argument is invalid");*/
-        } else if ((AEROSPIKE_OK == policy_manager_scan.set_policy(&serializer_type,
+        } else if ((AEROSPIKE_OK == policy_manager_scan.initPolicyManager(&scan_policy,
+                        "scan", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager_scan.set_policy(&serializer_type,
                         data->serializer_value, options, error)) &&
                 (AEROSPIKE_OK == initialize_scanApply(&scan, ns, set, module,
                                                       function, args, static_pool,
                                                       serializer_type, error))) {
             scan_initialized = true;
             if (AEROSPIKE_OK == set_scan_policies(&scan, options, error)) {
-                if (AEROSPIKE_OK == aerospike_scan_background(data->as_ref_p->as_p, &error, &scan_policy, &scan, &_scan_id)) {
+                if (AEROSPIKE_OK == aerospike_scan_background(data->as_ref_p->as_p, &error,
+                            &scan_policy, &scan, &_scan_id)) {
                     scan_id = (int64_t)_scan_id;
                     //Background scan started, now we can check the status
-                    if (is_wait && AEROSPIKE_OK == policy_manager_scan.set_policy(NULL,
+                    if (is_wait && AEROSPIKE_OK == policy_manager_info.initPolicyManager(&info_policy,
+                                "info", &data->as_ref_p->as_p->config, error) &&
+                            AEROSPIKE_OK == policy_manager_scan.set_policy(NULL,
                                 data->serializer_value, options, error)) {
                         aerospike_scan_wait(data->as_ref_p->as_p, &error, &info_policy, _scan_id, 0);
                     }
@@ -1159,8 +1187,7 @@ namespace HPHP {
         as_scan_info        _scan_info;
         uint64_t            _scan_id = 0;
         as_policy_info      info_policy;
-        PolicyManager       policy_manager(&info_policy, "info",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         as_error_init(&error);
 
@@ -1173,12 +1200,15 @@ namespace HPHP {
         } else if (!scan_id.isNull() && !scan_id.isInteger()) {
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
                     "scan_id argument is invalid");
-        } else if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+        } else if (AEROSPIKE_OK == policy_manager.initPolicyManager(&info_policy,
+                    "info", &data->as_ref_p->as_p->config, error) &&
+                AEROSPIKE_OK == policy_manager.set_policy(NULL,
                     data->serializer_value, options, error)) {
             if (!scan_id.isNull()) {
                 _scan_id = scan_id.toInt64();
             }
-            if (AEROSPIKE_OK == aerospike_scan_info(data->as_ref_p->as_p, &error, &info_policy, _scan_id, &_scan_info)) {
+            if (AEROSPIKE_OK == aerospike_scan_info(data->as_ref_p->as_p, &error,
+                        &info_policy, _scan_id, &_scan_info)) {
                 Array php_scan_info = Array::Create();
                 php_scan_info.set(s_progress_pct, (int64_t)_scan_info.progress_pct);
                 php_scan_info.set(s_records_scanned, (int64_t)_scan_info.records_scanned);
@@ -1253,7 +1283,8 @@ namespace HPHP {
 
     /* {{{ proto array Aerospike::predicateRange( string bin, int index_type, int|string min, int|string max )
        Helper which builds the 'WHERE RANGE' predicate */
-    Variant HHVM_STATIC_METHOD(Aerospike, predicateRange, const Variant &bin, const Variant &index_type, const Variant &min, const Variant &max)
+    Variant HHVM_STATIC_METHOD(Aerospike, predicateRange, const Variant &bin, const Variant &index_type,
+            const Variant &min, const Variant &max)
     {
         Array       where = Array::Create();
         bool        isNull = false;
@@ -1275,7 +1306,8 @@ namespace HPHP {
 
     /* {{{ proto int Aerospike::query( string ns, string set, array where, callback record_cb [, array select [, array options ]] )
        Queries a secondary index on a set for records matching the where predicate  */
-    int64_t HHVM_METHOD(Aerospike, query, const Variant &ns, const Variant &set, const Variant &where, const Variant &function, const Variant &bins, const Variant &options)
+    int64_t HHVM_METHOD(Aerospike, query, const Variant &ns, const Variant &set, const Variant &where,
+            const Variant &function, const Variant &bins, const Variant &options)
     {
         VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
@@ -1283,8 +1315,7 @@ namespace HPHP {
         as_query            query;
         as_policy_query     query_policy;
         bool                query_initialized = false;
-        PolicyManager       policy_manager(&query_policy, "query",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         foreach_callback_user_udata      udata(function, error);
 
@@ -1301,9 +1332,12 @@ namespace HPHP {
                     "Parameter 4 must be a function object");
         } else if (AEROSPIKE_OK == initialize_query(&query, ns, set, where, bins, error)) {
             query_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&query_policy,
+                        "query", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
-                aerospike_query_foreach(data->as_ref_p->as_p, &error, &query_policy, &query, scan_query_callback, &udata);
+                aerospike_query_foreach(data->as_ref_p->as_p, &error,
+                        &query_policy, &query, scan_query_callback, &udata);
             }
         }
 
@@ -1321,7 +1355,8 @@ namespace HPHP {
 
     /* {{{ proto int Aerospike::aggregate( string ns, string set, array where, string module, string function, array args, mixed &returned [, array options ] )
        Applies a stream UDF to the records matching a query and aggregates the results  */
-    int64_t HHVM_METHOD(Aerospike, aggregate, const Variant &ns, const Variant &set, const Variant &where, const Variant &module, const Variant &function, const Variant &args, VRefParam result, const Variant &options)
+    int64_t HHVM_METHOD(Aerospike, aggregate, const Variant &ns, const Variant &set, const Variant &where,
+            const Variant &module, const Variant &function, const Variant &args, VRefParam result, const Variant &options)
     {
         VMRegAnchor         _;
         auto                data = Native::data<Aerospike>(this_);
@@ -1333,8 +1368,7 @@ namespace HPHP {
         int16_t             serializer_type = SERIALIZER_PHP;
         Array               result_array = Array::Create();
         Variant             result_variant;
-        PolicyManager       policy_manager(&query_policy, "query",
-                &data->as_ref_p->as_p->config);
+        PolicyManager       policy_manager;
 
         foreach_callback_udata      udata(result_array, error);
 
@@ -1346,11 +1380,15 @@ namespace HPHP {
         } else if (!data->is_connected) {
             as_error_update(&error, AEROSPIKE_ERR_CLUSTER,
                     "aggregate: connection not established");
-        } else if (AEROSPIKE_OK == initialize_aggregate(&query, ns, set, where, module, function, args, static_pool, serializer_type, error)) {
+        } else if (AEROSPIKE_OK == initialize_aggregate(&query, ns, set, where, module,
+                    function, args, static_pool, serializer_type, error)) {
             query_initialized = true;
-            if (AEROSPIKE_OK == policy_manager.set_policy(NULL,
+            if (AEROSPIKE_OK == policy_manager.initPolicyManager(&query_policy,
+                        "query", &data->as_ref_p->as_p->config, error) &&
+                    AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
-                aerospike_query_foreach(data->as_ref_p->as_p, &error, &query_policy, &query, aggregate_callback, &udata);
+                aerospike_query_foreach(data->as_ref_p->as_p, &error,
+                        &query_policy, &query, aggregate_callback, &udata);
                 //Copy the returne data of aggregate in out variable
                 result = result_array;
             }
