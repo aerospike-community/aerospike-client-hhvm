@@ -29,7 +29,7 @@ namespace HPHP {
         bool        isInit = false;
         as_error_reset(&error);
 
-        if (!policy_p || !type || !config_p) {
+        if (policy_p && type && config_p) {
             this->policy_holder = policy_p;
             this->type = type;
             this->config_p = config_p;

@@ -953,6 +953,7 @@ namespace HPHP {
         as_error            error;
         as_policy_info      info_policy;
         PolicyManager       policy_manager;
+        String              udf_file_content;
 
         as_error_init(&error);
 
@@ -967,8 +968,9 @@ namespace HPHP {
                         "info", &data->as_ref_p->as_p->config, error) &&
                     AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
-                get_registered_udf_module_code(data->as_ref_p->as_p, module, module_code, language,
+                get_registered_udf_module_code(data->as_ref_p->as_p, module, udf_file_content, language,
                         &info_policy, error);
+                module_code = udf_file_content;
             }
         }
 

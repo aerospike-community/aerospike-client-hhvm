@@ -267,7 +267,7 @@ namespace HPHP {
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status get_registered_udf_module_code(aerospike *as_p, const Variant& module, VRefParam module_code, const Variant& language,
+    as_status get_registered_udf_module_code(aerospike *as_p, const Variant& module, String &module_code, const Variant& language,
             as_policy_info *info_policy_p, as_error& error)
     {
         as_error_reset(&error);
@@ -284,7 +284,15 @@ namespace HPHP {
 
                     if (AEROSPIKE_OK == aerospike_udf_get(as_p, &error, info_policy_p, module_name_p,
                                 (as_udf_type) language.toInt32(), &udf_file)) {
-                        module_code = String((char *) udf_file.content.bytes);
+                        char *udf_content = (char *)malloc(udf_file.content.size + 1);
+                        if (udf_content) {
+                            memset(udf_content, 0, udf_file.content.size + 1);
+                            memcpy(udf_content, (char *)udf_file.content.bytes, udf_file.content.size);
+                            module_code = String((char *)udf_content);
+                            free(udf_content);
+                        } else {
+                            as_error_update(&error, AEROSPIKE_ERR_PARAM, "UDF file content copying failed");
+                        }
                     }
                     as_udf_file_destroy(&udf_file);
                 } else {
