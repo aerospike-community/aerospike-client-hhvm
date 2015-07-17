@@ -154,15 +154,19 @@ namespace HPHP {
      * Wrapper function for setting the relevant aerospike policies by using the user's
      * optional policy options (if set)
      *
-     * @param options_variant   The user's optional policy options to be used if
-     *                          set
-     * @param error             as_error reference to be populated by this function
-     *                          in case of error
+     * @param serializer_value          The method level serializer value to be set
+     *                                  by this function
+     * @param global_serializer_val     The class level serializer value to be copied
+     *                                  to method level serializer variable
+     * @param options_variant           The user's optional policy options to be used if
+     *                                  set
+     * @param error                     as_error reference to be populated by this function
+     *                                  in case of error
      *
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    as_status PolicyManager::set_policy(int16_t *serializer_value, int16_t global_serializer_val,const Variant& options_variant, as_error& error) {
+    as_status PolicyManager::set_policy(int16_t *serializer_value, int16_t global_serializer_val, const Variant& options_variant, as_error& error) {
         as_error_reset(&error);
 
         if (!this->type || !this->policy_holder) {
