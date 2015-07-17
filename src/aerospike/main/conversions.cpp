@@ -153,6 +153,55 @@ namespace HPHP {
 
     /*
      *******************************************************************************************************
+     * If serialize_flag == true, executes the passed userland serializer callback,
+     * by creating as_bytes (bytes) from the passed Variant (value).
+     * Else executes the passed userland deserializer callback,
+     * by passing the as_bytes (bytes) to the deserializer and getting back
+     * the corresponding Variant (value).
+     *
+     * @param callback                      The user callback to be executed.
+     * @param bytes                         The as_bytes to be stored/retrieved.
+     * @param value                         The value to be retrieved/stored.
+     * @param serialize_flag                The flag which indicates
+     *                                      serialize/deserialize.
+     * @param error_p                       The as_error to be populated by the
+     *                                      function with encountered error if any.
+     *
+     *******************************************************************************************************
+    */
+    static void execute_user_callback(Variant callback, as_bytes **bytes, Variant &value, bool serialize_flag,
+            as_error& error)
+    {
+        Array params = Array::Create();
+        char *bytes_val_p = (char *) (*bytes)->value;
+        Variant callback_arg;
+
+        as_error_reset(&error);
+
+        if (serialize_flag) {
+            params.append(value);
+        } else {
+            callback_arg = String(bytes_val_p);
+            params.append(callback_arg);
+        }
+
+        Variant ret_value_callback = vm_call_user_func(callback,
+                params);
+        if (ret_value_callback.isNull()) {
+            if (serialize_flag) {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Unable to call user's registered serializer callback");
+            } else {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Unable to call user's registered deserializer callback");
+            }
+        } else {
+            value = ret_value_callback;
+        }
+    }
+
+    /*
+     *******************************************************************************************************
      * Serializes data (value_to_serialize) into as_bytes using serialization logic
      * based on serializer_policy.
      *
@@ -165,7 +214,7 @@ namespace HPHP {
      *******************************************************************************************************
      */
     as_status serialize_based_on_serializer_policy(int16_t serializer_type, as_bytes **bytes_p,
-            const Variant& value_to_serialize, StaticPoolManager& static_pool, as_error& error)
+            Variant& value_to_serialize, StaticPoolManager& static_pool, as_error& error)
     {
         HPHP::String serialized_string;
 
@@ -190,9 +239,17 @@ namespace HPHP {
                         "Unable to serialize using standard JSON serializer");
                 break;
             case SERIALIZER_USER:
-                /* TBD */
-                as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                        "Unable to serialize using user serializer");
+                *bytes_p = static_pool.get_as_bytes();
+                if (Aerospike::is_serializer_registered) {
+                    execute_user_callback(Aerospike::serializer, bytes_p, value_to_serialize,
+                            true, error);
+                    if (error.code == AEROSPIKE_OK) {
+                        set_as_bytes(bytes_p, value_to_serialize.toString(), AS_BYTES_BLOB, error);
+                    }
+                } else {
+                    as_error_update(&error, AEROSPIKE_ERR_PARAM, "No serializer callback registered");
+                }
+
                 break;
             default:
                 as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unsupported serializer");
@@ -231,8 +288,15 @@ namespace HPHP {
                 break;
             case AS_BYTES_BLOB:
                 {
-                    as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                            "Unable to unserialize bytes using user deserializer");
+                    if (Aerospike::is_deserializer_registered) {
+                        execute_user_callback(Aerospike::deserializer, &bytes_p, php_value,
+                                false, error);
+                        if (error.code != AEROSPIKE_OK) {
+                            break;
+                        }
+                    } else {
+                        as_error_update(&error, AEROSPIKE_ERR_PARAM, "No deserializer callback registered");
+                    }
                 }
                 break;
             default:
@@ -446,12 +510,15 @@ namespace HPHP {
      *******************************************************************************************
      * Function to convert PHP variant into as_val
      *
-     * @param php_variant   PHP Variant reference that is to be converted
-     * @param val_pp        as_val pointer to be allocated and populated by this function
-     * @param static_pool   StaticPoolManager instance reference, to be used for
-     *                      the conversion lifecycle.
-     * @param error         as_error reference to be populated by this function
-     *                      in case of error
+     * @param php_variant           PHP Variant reference that is to be converted
+     * @param val_pp                as_val pointer to be allocated and populated by this function
+     * @param static_pool           StaticPoolManager instance reference, to be used for
+     *                              the conversion lifecycle.
+     * @param serializer_type       The serializer_type to be used to handle
+     *                              the serialization.
+     * @param error                 as_error reference to be populated by this function
+     *                              in case of error
+     *
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
@@ -498,9 +565,10 @@ namespace HPHP {
                 *val_pp = (as_val *) list_p;
             }
         } else {
-            as_bytes *bytes = NULL;
+            as_bytes    *bytes = NULL;
+            Variant     temp_php_variant = php_variant;
             if (AEROSPIKE_OK != serialize_based_on_serializer_policy(serializer_type,
-                        &bytes, php_variant, static_pool, error)) {
+                        &bytes, temp_php_variant, static_pool, error)) {
                 return error.code;
             }
             *val_pp = (as_val *) bytes;
@@ -512,12 +580,15 @@ namespace HPHP {
      *******************************************************************************************
      * Function to convert PHP list into as_list
      *
-     * @param php_list      PHP Array reference that is to be converted
-     * @param list_pp       as_list pointer to be allocated and populated by this function
-     * @param static_pool   StaticPoolManager instance reference, to be used for
-     *                      the conversion lifecycle.
-     * @param error         as_error reference to be populated by this function
-     *                      in case of error
+     * @param php_list              PHP Array reference that is to be converted
+     * @param list_pp               as_list pointer to be allocated and populated by this function
+     * @param static_pool           StaticPoolManager instance reference, to be used for
+     *                              the conversion lifecycle.
+     * @param error                 as_error reference to be populated by this function
+     *                              in case of error
+     * @param serializer_type       The serializer_type to be used to handle
+     *                              the serialization.
+     *
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
@@ -556,12 +627,15 @@ namespace HPHP {
      *******************************************************************************************
      * Function to convert PHP Map into as_map
      *
-     * @param php_map       PHP Array reference that is to be converted
-     * @param map_pp        as_map pointer to be allocated and populated by this function
-     * @param static_pool   StaticPoolManager instance reference, to be used for
-     *                      the conversion lifecycle.
-     * @param error         as_error reference to be populated by this function
-     *                      in case of error
+     * @param php_map               PHP Array reference that is to be converted
+     * @param map_pp                as_map pointer to be allocated and populated by this function
+     * @param static_pool           StaticPoolManager instance reference, to be used for
+     *                              the conversion lifecycle.
+     * @param serializer_type       The serializer_type to be used to handle
+     *                              the serialization.
+     * @param error                 as_error reference to be populated by this function
+     *                              in case of error
+     *
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
@@ -609,12 +683,15 @@ namespace HPHP {
      *******************************************************************************************
      * Function to convert PHP record into as_record
      *
-     * @param php_record    PHP Array reference that is to be converted
-     * @param record        as_record reference to be populated by this function
-     * @param static_pool   StaticPoolManager instance reference, to be used for
-     *                      the conversion lifecycle.
-     * @param error         as_error reference to be populated by this function
-     *                      in case of error
+     * @param php_record            PHP Array reference that is to be converted
+     * @param record                as_record reference to be populated by this function
+     * @param static_pool           StaticPoolManager instance reference, to be used for
+     *                              the conversion lifecycle.
+     * @param serializer_type       The serializer_type to be used to handle
+     *                              the serialization.
+     * @param error                 as_error reference to be populated by this function
+     *                              in case of error
+     *
      * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
@@ -1013,6 +1090,7 @@ namespace HPHP {
     as_status as_val_to_php_variant(const as_val *value_p, Variant& php_value, as_error& error)
     {
         as_error_reset(&error);
+
         switch(as_val_type(value_p)) {
             case AS_STRING:
                 {
@@ -1116,6 +1194,7 @@ namespace HPHP {
     as_status bins_to_php_bins(const as_record *record_p, Array& php_bins, as_error& error)
     {
         as_error_reset(&error);
+
         if (!record_p) {
             return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                     "Record is null");
@@ -1123,6 +1202,7 @@ namespace HPHP {
 
         foreach_callback_udata      udata(php_bins, error);
         as_record_foreach(record_p, (as_rec_foreach_callback) bins_to_php_bins_foreach_callback, &udata);
+
         return error.code;
     }
 
