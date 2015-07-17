@@ -6,7 +6,5 @@ with SERIALIZER_USER.
 <?php
 include dirname(__FILE__)."/../../astestframework/astest-phpt-loader.inc";
 aerospike_phpt_runtest("Get", "testGetObjectPHPSerializedAndUDFDeserialized");
---XFAIL--
-Fails because serialization and deserialization support is not present.
 --EXPECT--
 OK
