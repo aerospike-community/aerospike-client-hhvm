@@ -169,7 +169,7 @@ namespace HPHP {
      *
      *******************************************************************************************************
     */
-    static void execute_user_callback(Variant callback, as_bytes **bytes, Variant value, bool serialize_flag,
+    static void execute_user_callback(Variant callback, as_bytes **bytes, Variant &value, bool serialize_flag,
             as_error& error)
     {
         Array params = Array::Create();
@@ -214,7 +214,7 @@ namespace HPHP {
      *******************************************************************************************************
      */
     as_status serialize_based_on_serializer_policy(int16_t serializer_type, as_bytes **bytes_p,
-            const Variant& value_to_serialize, StaticPoolManager& static_pool, as_error& error)
+            Variant& value_to_serialize, StaticPoolManager& static_pool, as_error& error)
     {
         HPHP::String serialized_string;
 
@@ -565,9 +565,10 @@ namespace HPHP {
                 *val_pp = (as_val *) list_p;
             }
         } else {
-            as_bytes *bytes = NULL;
+            as_bytes    *bytes = NULL;
+            Variant     temp_php_variant = php_variant;
             if (AEROSPIKE_OK != serialize_based_on_serializer_policy(serializer_type,
-                        &bytes, php_variant, static_pool, error)) {
+                        &bytes, temp_php_variant, static_pool, error)) {
                 return error.code;
             }
             *val_pp = (as_val *) bytes;
