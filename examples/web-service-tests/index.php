@@ -262,6 +262,116 @@ $app->get('/scanApply', function() use($db) {
     }
 });
 
+$app->get('/query', function() use($db) {
+    if ($db->isConnected()) {
+        $key = $db->initKey("test", "demo", "key12");
+        $db->put($key,array("first_name"=>"john", "age"=>22));
+        $key = $db->initKey("test", "demo", "key15");
+        $db->put($key,array("first_name"=>"john", "age"=>25));
+
+        $where = $db->predicateEquals("age", 25);
+
+        $status = $db->query("test", "demo", $where, function ($record) {
+            var_dump($record);
+            return true;
+        });
+        if($status != Aerospike::OK) {
+            var_dump("Query Failed");
+            var_dump($db->error());
+            var_dump($db->errorno());
+        } else {
+            var_dump("Query successful");
+            var_dump($status);
+        }
+        $db->close();
+    }
+});
+
+$app->get('/aggregate', function() use($db) {
+    if ($db->isConnected()) {
+        $key = $db->initKey("test", "demo", "key12");
+        $db->put($key,array("first_name"=>"john", "age"=>22));
+        $key = $db->initKey("test", "demo", "key15");
+        $db->put($key,array("first_name"=>"john", "age"=>25));
+
+        $where = $db->predicateBetween("age", 20, 29);
+        $status = $db->aggregate("test", "demo", $where, "test_stream", "group_count", array("age"), $returned);
+        if($status != Aerospike::OK) {
+            var_dump("Aggregate Failed");
+            var_dump($db->error());
+            var_dump($db->errorno());
+        } else {
+            var_dump("Aggregate successful");
+            var_dump($returned);
+        }
+        $db->close();
+    }
+});
+
+$app->get('/register', function() use($db) {
+    if ($db->isConnected()) {
+        ///*
+        $status = $db->register("/home/vishal/aerospike-client-hhvm/src/aerospike/tests/lua/test_record_udf.lua", "test_record_udf.lua");
+        if($status != Aerospike::OK) {
+            var_dump("register failed");
+            var_dump($db->error());
+            var_dump($db->errorno());
+        } else {
+            var_dump("UDF register successful");
+            var_dump($status);
+        }
+        // */
+
+        /*
+        $status = $db->listRegistered($modules);
+        if($status != Aerospike::OK) {
+            var_dump("listRegistered failed");
+            var_dump($db->error());
+            var_dump($db->errorno());
+        } else {
+            var_dump("UDF listregister successful");
+            var_dump($modules);
+        }
+         */
+
+        /*
+        for ($i = 0; $i < count($modules); $i++)
+        {
+            $status = $db->getRegistered($modules[$i]["name"], $module_code);
+            //var_dump($module_code);
+        }
+         */
+
+        /*
+        $key = $db->initKey("test", "demo", "integer_key");
+        $record = array("name" => "name100", "age" => 100);
+        $status = $db->put($key, $record);
+        $status = $db->apply($key, "test_record_udf", "bin_udf_operation_integer", array("age", 2, 20), $returned);
+        if ($status != Aerospike::OK) {
+            var_dump("apply failed");
+            var_dump($db->error());
+            var_dump($db->errorno());
+        } else {
+            var_dump("UDF apply successful");
+            var_dump($returned);
+        }
+        $db->remove($key);
+         */
+
+        /*
+        $status = $db->deregister("test_record_udf.lua");
+        if($status != Aerospike::OK) {
+            var_dump("UDF deregister failed");
+        } else {
+            var_dump("UDF deregister successful");
+            var_dump($status);
+        }
+         */
+
+        $db->close();
+    }
+});
+
 $app->put('/closeconnection', function() use($db) {
     $db->close();
     echo "Connection closed";

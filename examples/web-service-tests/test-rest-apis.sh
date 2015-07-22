@@ -16,10 +16,13 @@ httperf --server localhost --port 80 --uri /increment --print-reply --num-conn $
 httperf --server localhost --port 80 --uri /multiappend --print-reply --num-conn $num_conn --rate $rate --method=PUT
 httperf --server localhost --port 80 --uri /multiprepend --print-reply --num-conn $num_conn --rate $rate --method=PUT
 httperf --server localhost --port 80 --uri /multitouch --print-reply --num-conn $num_conn --rate $rate --method=PUT
-httperf --server localhost --port 80 --uri /removebin --print-reply --num-conn $num_conn --rate $rate --method=PUT
-httperf --server localhost --port 80 --uri /remove --print-reply --num-conn $num_conn --rate $rate --method=PUT
 httperf --server localhost --port 80 --uri /scan --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /scanApply --print-reply --num-conn $num_conn --rate $rate
+httperf --server localhost --port 80 --uri /query --print-reply --num-conn $num_conn --rate $rate
+httperf --server localhost --port 80 --uri /aggregate --print-reply --num-conn $num_conn --rate $rate
+httperf --server localhost --port 80 --uri /register --print-reply --num-conn $num_conn --rate $rate
+httperf --server localhost --port 80 --uri /removebin --print-reply --num-conn $num_conn --rate $rate --method=PUT
+httperf --server localhost --port 80 --uri /remove --print-reply --num-conn $num_conn --rate $rate --method=PUT
 httperf --server localhost --port 80 --uri /closeconnection --print-reply --num-conn $num_conn --rate $rate --method=PUT
 httperf --server localhost --port 80 --uri /reconnect --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /getmany --print-reply --num-conn $num_conn --rate $rate
