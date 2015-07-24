@@ -14,7 +14,7 @@
     
 3. Install httperf
 
-4. Edit index.php to change server IP, port, Slim installation path etc. according to
+4. Edit index.php to change server IP, port, LUA_DIR(lua directory path), Slim installation path etc. according to
    your set up.
 
 5. Edit test-rest-apis.sh to change num-conn and rate for the hhtperf testing.

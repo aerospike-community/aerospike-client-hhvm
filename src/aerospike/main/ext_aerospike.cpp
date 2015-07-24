@@ -1520,6 +1520,15 @@ namespace HPHP {
                 HHVM_ME(Aerospike, error);
                 HHVM_STATIC_ME(Aerospike, setSerializer);
                 HHVM_STATIC_ME(Aerospike, setDeserializer);
+                Native::registerNativeDataInfo<Aerospike>(s_Aerospike.get());
+                pthread_rwlock_init(&connection_mutex, NULL);
+                pthread_rwlock_init(&scan_query_callback_mutex, NULL);
+
+                loadSystemlib();
+            }
+
+            void threadInit() override
+            {
                 IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
                         "aerospike.connect_timeout",
                         "1000", &ini_entry.connect_timeout);
@@ -1564,12 +1573,6 @@ namespace HPHP {
                         "aerospike.udf.lua_user_path",
                         "/opt/aerospike/client-php/usr-lua",
                         &ini_entry.lua_user_path);
-
-                Native::registerNativeDataInfo<Aerospike>(s_Aerospike.get());
-                pthread_rwlock_init(&connection_mutex, NULL);
-                pthread_rwlock_init(&scan_query_callback_mutex, NULL);
-
-                loadSystemlib();
             }
 
             void moduleShutdown() override
