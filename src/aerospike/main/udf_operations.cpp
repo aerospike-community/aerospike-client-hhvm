@@ -22,7 +22,6 @@ namespace HPHP {
     as_status read_udf_file_contents(aerospike *as_p, const Variant& path, as_bytes* udf_content_p, as_error& error)
     {
         FILE *udf_file_path = NULL;
-        FILE *fileW_p = NULL;
         uint8_t* bytes_p = NULL;
         uint8_t* buff_p = NULL;
 
@@ -56,50 +55,10 @@ namespace HPHP {
                 read = (int) fread(buff_p, 1, LUA_FILE_BUFFER_FRAME, udf_file_path);
             }
        
-            const char *udf_path = as_p->config.lua.user_path;
-            char copy_filepath[AS_CONFIG_PATH_MAX_LEN] = {0};
-            uint32_t user_path_len = strlen(udf_path);
-
-            memcpy(copy_filepath, udf_path, user_path_len);
-
-            if(udf_path[user_path_len - 1] != '/') {
-                memcpy(copy_filepath + user_path_len, "/", 1);
-                user_path_len++;
-            }
-
-            const char *filename = strrchr(file_path, '/');
-            if(!filename) {
-                filename = file_path;
-            } else if(filename[0] == '/') {
-                filename = filename + 1;
-            }
-
-            memcpy(copy_filepath + user_path_len, filename, strlen(filename));
-            fileW_p = fopen(copy_filepath, "w");
-            if(!fileW_p) {
-                if (errno == ENOENT) {
-                    return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND,
-                            "Cannot create script file due to no such directory");
-                } else if (errno == EACCES) {
-                    return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND,
-                            "Cannot create script file due to invalid permissions");
-                } else {
-                    return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND, "Cannot create script file");
-                }
-            }
-
-            if (0 >= (int) fwrite(bytes_p, size, 1, fileW_p)) {
-                return as_error_update(&error, AEROSPIKE_ERR_UDF_NOT_FOUND, "unable to write to script file");
-            }
-
             as_bytes_init_wrap(udf_content_p, bytes_p, size, false);
 
             if (udf_file_path) {
                 fclose(udf_file_path);
-            }
-
-            if (fileW_p) {
-                fclose(fileW_p);
             }
 
             if (bytes_p) {
@@ -148,8 +107,12 @@ namespace HPHP {
                 
                 if (AEROSPIKE_OK == aerospike_udf_put(as_p, &error, info_policy_p, module_p,
                             (as_udf_type) language.toInt32(), udf_content_p)) {
-                    if (AEROSPIKE_OK == aerospike_udf_put_wait(as_p, &error, info_policy_p, module_p, 0)) {
-                    }
+                    aerospike_udf_put_wait(as_p, &error, info_policy_p, module_p, 0);
+                }
+
+                if (error.code != AEROSPIKE_OK) {
+                    char *user_lua_path = as_p->config.lua.user_path;
+                    copy_udf_module_to_user_lua_path(user_lua_path, path.toString().c_str(), udf_content_p->value, udf_content_p->size);
                 }
             }
 
@@ -160,7 +123,7 @@ namespace HPHP {
 
         return error.code;
     }
-    
+
     /*
      *******************************************************************************************
      * Function to remove a udf module from the Aerospike cluster
@@ -348,5 +311,56 @@ namespace HPHP {
         }
 
         return error.code;
+    }
+
+    /*
+     *******************************************************************************************
+     * Function to copy udf module to user lua path
+     *
+     * @param user_lua_path         USER_LUA_PATH set in as_config
+     * @param file_path             lua file path to be registered
+     * @param bytes_p               Content of the above file
+     * @param size                  length of the content
+     *******************************************************************************************
+     */
+    void copy_udf_module_to_user_lua_path(const char *user_lua_path, const char *file_path, uint8_t *bytes_p, uint32_t size)
+    {
+        char copy_filepath[AS_CONFIG_PATH_MAX_LEN] = {0};
+        uint32_t user_path_len = strlen(user_lua_path);
+
+        memcpy(copy_filepath, user_lua_path, user_path_len);
+
+        if(user_lua_path[user_path_len - 1] != '/') {
+            memcpy(copy_filepath + user_path_len, "/", 1);
+            user_path_len++;
+        }
+
+        const char *filename = strrchr(file_path, '/');
+        if(!filename) {
+            filename = file_path;
+        } else if(filename[0] == '/') {
+            filename = filename + 1;
+        }
+
+        memcpy(copy_filepath + user_path_len, filename, strlen(filename));
+        FILE *fileW_p = NULL;
+        fileW_p = fopen(copy_filepath, "w");
+        if(!fileW_p) {
+            if (errno == ENOENT) {
+                //Cannot create script file due to no such directory
+            } else if (errno == EACCES) {
+                //Cannot create script file due to invalid permissions
+            } else {
+                //Cannot create script file
+            }
+        } else {
+            if (0 >= (int) fwrite(bytes_p, size, 1, fileW_p)) {
+                //unable to write to script file
+            }
+        }
+
+        if (fileW_p) {
+            fclose(fileW_p);
+        }
     }
 }

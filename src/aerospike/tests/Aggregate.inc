@@ -568,16 +568,12 @@ class Aggregate extends AerospikeTestCommon
         $this->ensureUdfModule("tests/lua/test_stream.lua", "test_stream.lua");
         $where = $this->db->predicateBetween("age", true, true);
         $status = $this->db->aggregate("test", "demo", $where, "test_stream", "group_count", array("first_name"), $returned);
-        if ($status == Aerospike::OK) {
-            if (array_key_exists("john", $returned[0]) &&
-                array_key_exists("smith", $returned[0]) &&
-                array_key_exists("adam", $returned[0])) {
-                return Aerospike::OK;
-            } else {
-                return Aerospike::ERR_CLIENT;
-            }
-        } else {
+        if ($status == Aerospike::OK && count($returned) == 0) {
+            return Aerospike::OK;
+        } else if ($status != Aerospike::OK) {
             return $this->db->errorno();
+        } else {
+            return Aerospike::ERR_CLIENT;
         }
     }
     /**

@@ -57,6 +57,8 @@ class Connection extends AerospikeTestCommon
             return($db->errorno());
         } catch (ErrorException $e) {
             return Aerospike::ERR_PARAM;
+        } catch (Exception $e) {
+            return Aerospike::ERR_PARAM;
         }
     }
     /**
