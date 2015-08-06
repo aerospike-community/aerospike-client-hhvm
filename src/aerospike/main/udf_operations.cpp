@@ -110,7 +110,7 @@ namespace HPHP {
                     aerospike_udf_put_wait(as_p, &error, info_policy_p, module_p, 0);
                 }
 
-                if (error.code != AEROSPIKE_OK) {
+                if (memcmp(as_p->config.lua.user_path, "/opt/aerospike/usr/udf/lua", 26) != 0) {
                     char *user_lua_path = as_p->config.lua.user_path;
                     copy_udf_module_to_user_lua_path(user_lua_path, path.toString().c_str(), udf_content_p->value, udf_content_p->size);
                 }
