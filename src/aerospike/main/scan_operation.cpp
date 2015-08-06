@@ -619,7 +619,9 @@ namespace HPHP {
             //Conversion failed stop the aggregate call
             do_continue = false;
         } else {
-            udata_p->data.append(php_value);
+            if (!php_value.isArray() || !php_value.toArray().empty()) {
+                udata_p->data.append(php_value);
+            }
         }
         pthread_rwlock_unlock(&scan_query_callback_mutex);
 
