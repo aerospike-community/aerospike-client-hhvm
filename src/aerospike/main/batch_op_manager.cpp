@@ -192,15 +192,13 @@ namespace HPHP {
      *******************************************************************************************
      */
     as_status BatchOpManager::execute_batch_exists(aerospike *as_p,
-            VRefParam php_metadata, as_policy_batch& batch_policy,
+            Array &php_metadata, as_policy_batch& batch_policy,
             as_error& error)
     {
         as_error_reset(&error);
-        Array temp_metadata = Array::Create();
-        foreach_callback_udata udata(temp_metadata, error);
+        foreach_callback_udata udata(php_metadata, error);
         aerospike_batch_exists(as_p, &error, &batch_policy, &this->batch,
                 (aerospike_batch_read_callback) &batch_exists_cb, &udata);
-        php_metadata = temp_metadata;
         return error.code;
     }
     
@@ -222,13 +220,12 @@ namespace HPHP {
      *******************************************************************************************
      */
     as_status BatchOpManager::execute_batch_get(aerospike *as_p,
-            VRefParam php_records, const Variant& php_filter_bins,
+            Array &php_records, const Variant& php_filter_bins,
             as_policy_batch& batch_policy,
             as_error& error)
     {
         as_error_reset(&error);
-        Array temp_records = Array::Create();
-        foreach_callback_udata udata(temp_records, error);
+        foreach_callback_udata udata(php_records, error);
 
         if (!php_filter_bins.isNull() && !php_filter_bins.isArray()) {
             return as_error_update(&error, AEROSPIKE_ERR_PARAM,
@@ -250,7 +247,6 @@ namespace HPHP {
             aerospike_batch_get(as_p, &error, &batch_policy, &this->batch,
                     (aerospike_batch_read_callback) &batch_get_cb, &udata);
         }
-        php_records = temp_records;
         return error.code;
     }
 

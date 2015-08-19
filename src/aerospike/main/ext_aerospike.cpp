@@ -593,7 +593,7 @@ namespace HPHP {
                     if (status == AEROSPIKE_OK) {
                         as_record_to_php_record(rec_p, &key, temp_php_rec, &read_policy.key, error);
                     }
-                    php_rec = temp_php_rec;
+                    php_rec.assignIfRef(temp_php_rec);
                     as_record_destroy(rec_p);
                 }
             }
@@ -636,8 +636,10 @@ namespace HPHP {
                             "batch", &data->as_ref_p->as_p->config, error) &&
                         AEROSPIKE_OK == policy_manager.set_policy(NULL,
                             data->serializer_value, options, error)) {
+                    Array   temp_php_records = Array::Create();
                     batch_op_manager.execute_batch_get(data->as_ref_p->as_p,
-                            php_records, filter_bins, batch_policy, error);
+                            temp_php_records, filter_bins, batch_policy, error);
+                    php_records.assignIfRef(temp_php_records);
                 }
             } catch (const std::exception& e) {
                 as_error_update(&error, AEROSPIKE_ERR_CLIENT,
@@ -696,7 +698,7 @@ namespace HPHP {
                         bins_to_php_bins(rec_p, php_rec, error);
                         as_record_destroy(rec_p);
                     }
-                    returned = php_rec;
+                    returned.assignIfRef(php_rec);
                 }
             }
         }
@@ -836,7 +838,7 @@ namespace HPHP {
                             &error, &read_policy, &key, &record_p)) {
                     Array php_metadata = Array::Create();
                     metadata_to_php_metadata(record_p, php_metadata, error);
-                    metadata = php_metadata;
+                    metadata.assignIfRef(php_metadata);
                 }
                 as_record_destroy(record_p);
             }
@@ -878,8 +880,10 @@ namespace HPHP {
                             "batch", &data->as_ref_p->as_p->config, error) &&
                         AEROSPIKE_OK == policy_manager.set_policy(NULL,
                             data->serializer_value, options, error)) {
+                    Array   php_metadata = Array::Create();
                     batch_op_manager.execute_batch_exists(data->as_ref_p->as_p,
-                            metadata, batch_policy, error);
+                            php_metadata, batch_policy, error);
+                    metadata.assignIfRef(php_metadata);
                 }
             } catch (const std::exception& e) {
                 as_error_update(&error, AEROSPIKE_ERR_CLIENT,
@@ -1011,7 +1015,7 @@ namespace HPHP {
                         data->serializer_value, options, error)) {
                 get_registered_udf_module_code(data->as_ref_p->as_p, module, udf_file_content, language,
                         &info_policy, error);
-                module_code = udf_file_content;
+                module_code.assignIfRef(udf_file_content);
             }
         }
 
@@ -1048,7 +1052,7 @@ namespace HPHP {
                 Array temp_modules = Array::Create();
                 if (AEROSPIKE_OK == list_registered_udf_modules(data->as_ref_p->as_p, temp_modules, language,
                             &info_policy, error)) {
-                    modules = temp_modules;
+                    modules.assignIfRef(temp_modules);
                 }
             }
         }
@@ -1073,6 +1077,7 @@ namespace HPHP {
         StaticPoolManager   static_pool;
         bool                key_initialized = false;
         PolicyManager       policy_manager;
+        Variant             temp_returned_value;
 
         as_error_init(&error);
 
@@ -1089,7 +1094,8 @@ namespace HPHP {
                     AEROSPIKE_OK == policy_manager.set_policy(&serializer_type,
                         data->serializer_value, options, error)) {
                 aerospike_udf_apply(data->as_ref_p->as_p, key, module, function, args,
-                        &apply_policy, static_pool, serializer_type, returned_value, error);
+                        &apply_policy, static_pool, serializer_type, temp_returned_value, error);
+                returned_value.assignIfRef(temp_returned_value);
             }
         }
 
@@ -1196,7 +1202,7 @@ namespace HPHP {
             if (AEROSPIKE_OK == set_scan_policies(&scan, options, error)) {
                 if (AEROSPIKE_OK == aerospike_scan_background(data->as_ref_p->as_p, &error,
                             &scan_policy, &scan, &_scan_id)) {
-                    scan_id = (int64_t)_scan_id;
+                    scan_id.assignIfRef((int64_t)_scan_id);
                     //Background scan started, now we can check the status
                     if (is_wait && AEROSPIKE_OK == policy_manager_info.initPolicyManager(&info_policy,
                                 "info", &data->as_ref_p->as_p->config, error) &&
@@ -1256,7 +1262,7 @@ namespace HPHP {
                 php_scan_info.set(s_progress_pct, (int64_t)_scan_info.progress_pct);
                 php_scan_info.set(s_records_scanned, (int64_t)_scan_info.records_scanned);
                 php_scan_info.set(s_status, (int64_t)_scan_info.status);
-                scan_info = php_scan_info;
+                scan_info.assignIfRef(php_scan_info);
             }
         }
 
@@ -1409,11 +1415,11 @@ namespace HPHP {
         bool                query_initialized = false;
         StaticPoolManager   static_pool;
         int16_t             serializer_type = SERIALIZER_PHP;
-        Array               result_array = Array::Create();
+        Array               aggregate_array = Array::Create();
         Variant             result_variant;
         PolicyManager       policy_manager;
 
-        foreach_callback_udata      udata(result_array, error);
+        foreach_callback_udata      udata(aggregate_array, error);
 
         as_error_init(&error);
 
@@ -1433,7 +1439,7 @@ namespace HPHP {
                 aerospike_query_foreach(data->as_ref_p->as_p, &error,
                         &query_policy, &query, aggregate_callback, &udata);
                 //Copy the returne data of aggregate in out variable
-                result = result_array;
+                result.assignIfRef(aggregate_array);
             }
         }
 
@@ -1445,7 +1451,7 @@ namespace HPHP {
         as_error_copy(&data->latest_error, &error);
         pthread_rwlock_unlock(&data->latest_error_mutex);
 
-        result_variant = result_array;
+        result_variant = aggregate_array;
         result_variant.releaseForSweep();
 
         return error.code;

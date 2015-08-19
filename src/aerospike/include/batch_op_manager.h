@@ -48,9 +48,9 @@ namespace HPHP {
             BatchOpManager();
             ~BatchOpManager();
             BatchOpManager(const Array& php_keys);
-            as_status execute_batch_exists(aerospike *as_p, VRefParam php_metadata,
+            as_status execute_batch_exists(aerospike *as_p, Array &php_metadata,
                     as_policy_batch& batch_policy, as_error& error);
-            as_status execute_batch_get(aerospike *as_p, VRefParam php_records,
+            as_status execute_batch_get(aerospike *as_p, Array &php_records,
                     const Variant& filter_bins, as_policy_batch& batch_policy,
                     as_error& error);
     };

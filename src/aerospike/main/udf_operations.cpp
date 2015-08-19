@@ -179,7 +179,7 @@ namespace HPHP {
      *******************************************************************************************
      */
     as_status aerospike_udf_apply(aerospike *as_p, as_key key, const Variant& module, const Variant& function, const Variant& args,
-            as_policy_apply *apply_policy_p, StaticPoolManager& static_pool, int16_t serializer_type, VRefParam php_returned_value,
+            as_policy_apply *apply_policy_p, StaticPoolManager& static_pool, int16_t serializer_type, Variant &php_returned_value,
             as_error& error)
     {
         Array php_udf_args;
