@@ -10,10 +10,3 @@ this set.
 php simple.php --host=192.168.119.3 -a -c
 ```
 
-### Applying a Stream UDF to the Results of a Query
-`aggregate.php` shows how an aggregation similar to the SQL COUNT(\*) GROUP BY
-_field_ is applied to the records streaming out of a secondary index query.
-
-```bash
-php aggregate.php --host=192.168.119.3 -a -c
-```

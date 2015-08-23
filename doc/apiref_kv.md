@@ -77,6 +77,16 @@ public int Aerospike::getMany ( array $keys, array &$records [, array $filter [,
 public int Aerospike::existsMany ( array $keys, array &$metadata [, array $options ] )
 ```
 
+### [Aerospike::setSerializer](aerospike_setserializer.md)
+```
+public static Aerospike::setSerializer ( callback $serialize_cb )
+```
+
+### [Aerospike::setDeserializer](aerospike_setdeserializer.md)
+```
+public static Aerospike::setDeserializer ( callback $unserialize_cb )
+```
+
 ## Example
 
 ```php

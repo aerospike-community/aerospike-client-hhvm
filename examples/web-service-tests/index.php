@@ -347,37 +347,6 @@ $app->get('/query', function() use($db) {
     }
 });
 
-$app->get('/aggregate', function() use($db, $LUA_DIR) {
-    if ($db->isConnected()) {
-        $key = $db->initKey("test", "demo", "key12");
-        $db->put($key,array("first_name"=>"john", "age"=>22));
-        $key = $db->initKey("test", "demo", "key15");
-        $db->put($key,array("first_name"=>"john", "age"=>25));
-
-        $status = $db->register($LUA_DIR . "/test_stream.lua", "test_stream.lua");
-        if ($status != Aerospike::OK) {
-            echo "Register UDF failed\n";
-            $db->close();
-            exit(0);
-        }
-
-        $return_value_index = $db->addIndex("test", "demo", "age", "age_dx", Aerospike::INDEX_TYPE_DEFAULT, Aerospike::INDEX_NUMERIC);
-        $where = $db->predicateBetween("age", 20, 29);
-        $status = $db->aggregate("test", "demo", $where, "test_stream", "group_count", array("age"), $returned);
-        if ($status != Aerospike::OK) {
-            var_dump("Aggregate Failed");
-            var_dump($db->error());
-            var_dump($db->errorno());
-        } else {
-            var_dump("Aggregate successful");
-            var_dump($returned);
-        }
-        $db->close();
-    } else {
-        echo "Aerospike DB connection is not established";
-    }
-});
-
 $app->get('/register', function() use($db, $LUA_DIR) {
     if ($db->isConnected()) {
         $status = $db->register($LUA_DIR . "/test_record_udf.lua", "test_record_udf.lua");

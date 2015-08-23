@@ -23,7 +23,6 @@ httperf --server localhost --port 80 --uri /multitouch --print-reply --num-conn 
 httperf --server localhost --port 80 --uri /scan --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /scanApply --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /query --print-reply --num-conn $num_conn --rate $rate
-httperf --server localhost --port 80 --uri /aggregate --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /register --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /listRegistered --print-reply --num-conn $num_conn --rate $rate
 httperf --server localhost --port 80 --uri /getRegistered --print-reply --num-conn $num_conn --rate $rate

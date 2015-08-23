@@ -20,7 +20,7 @@ constants, such as **OK** or **ERR_RECORD_NOT_FOUND** as listed in
 
 ````
 cd src/aerospike/
-cp tests/aerospike.inc tests/aerospike.local.inc
+cp tests/aerospike.local.skeleton tests/aerospike.local.inc
 ```
 Edit the file `tests/aerospike.local.inc` with the IP address and port
 of a node in your Aerospike cluster before running the phpt scripts.
@@ -31,12 +31,12 @@ To run the testcases you can set environment variable `HHVM_EXECUTABLE` with HHV
 
 ```
 cd src/aerospike/
-scripts/test.sh tests/phpt
+./scripts/test.sh tests/phpt
 ```
 
 To run only the phpt test cases for Put:
 ```
-scripts/test.sh tests/phpt/Put
+./scripts/test.sh tests/phpt/Put
 ```
 
 ### Troubleshooting
@@ -49,5 +49,4 @@ cause the tests to fail.
 To clean up artifacts created by the tests you can run:
     Change directory to `aerospike-client-hhvm/src/aerospike` and run:
 
-    scripts/test-cleanup.sh
-
+    ./scripts/test-cleanup.sh

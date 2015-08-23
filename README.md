@@ -3,9 +3,9 @@ This is a prototype of an Aerospike client implemented as a
 [HHVM Native Interface](https://github.com/facebook/hhvm/wiki/Extension-API)
 extension.
 
-Currently tested on 64-bit Ubuntu 14.04 LTS against HHVM 3.7.2,
-we intend to support HHVM [LTS releases](https://github.com/facebook/hhvm/wiki/Long-term-support-%28LTS%29#lts-releases)
-starting with 3.9.0.
+Currently builds on 64-bit Ubuntu 14.04 LTS against HHVM **3.9.0**, with the
+aerospike C client release **3.1.16**. We intend to support HHVM [LTS release](https://github.com/facebook/hhvm/wiki/Long-term-support-%28LTS%29#lts-releases)
+3.9.
 
 ## Install HHVM
 
@@ -17,6 +17,13 @@ sudo add-apt-repository "deb http://dl.hhvm.com/ubuntu $(lsb_release -sc) main"
 sudo apt-get update
 sudo apt-get install -y hhvm
 sudo apt-get install -y hhvm-dev
+```
+To manually install a specific HHVM build, such as 3.9.0, instead of using apt-get:
+```
+wget -O 'hhvm_3.9.0~trusty_amd64.deb' http://dl.hhvm.com/ubuntu/pool/main/h/hhvm/hhvm_3.9.0~trusty_amd64.deb
+sudo dpkg -i hhvm_3.9.0~trusty_amd64.deb
+wget -O 'hhvm-dev_3.9.0~trusty_amd64.deb ' http://dl.hhvm.com/ubuntu/pool/main/h/hhvm-dev/hhvm-dev_3.9.0~trusty_amd64.deb
+sudo dpkg -i hhvm-dev_3.9.0~trusty_amd64.deb
 ```
 
 ### Install HHVM on Other Distros
@@ -30,7 +37,7 @@ article explain how to upgrade to this version in older distros such as
 Debian 7.
 
 ## Install Aerospike C client
-Get the 3.1.16 release of the [Aerospike C Client](http://www.aerospike.com/download/client/c/3.1.16/)
+Get the **3.1.16** release of the [Aerospike C Client](http://www.aerospike.com/download/client/c/3.1.16/)
 library, and install the development package contained in the tar archive.
 
 For example, on Ubuntu 14.04:
