@@ -7,6 +7,16 @@ Currently builds on 64-bit Ubuntu 14.04 LTS against HHVM **3.9.0**, with the
 aerospike C client release **3.1.16**. We intend to support HHVM [LTS release](https://github.com/facebook/hhvm/wiki/Long-term-support-%28LTS%29#lts-releases)
 3.9.
 
+## Documentation
+
+Documentation of the Aerospike HHVM Client may be found in the [doc directory](doc/README.md).
+The API described there is the [specification](doc/aerospike.md) for the PHP Client.
+Notes on the internals of the implementation are in [doc/internals.md](doc/internals.md).
+
+[Example PHP code](examples/) can be found in the `examples/` directory.
+
+Full documentation of the Aerospike database is available at http://www.aerospike.com/docs/
+
 ## Install HHVM
 
 ### [Install HHVM on Ubuntu 14.04 LTS](https://github.com/facebook/hhvm/wiki/Prebuilt-packages-on-Ubuntu-14.04)

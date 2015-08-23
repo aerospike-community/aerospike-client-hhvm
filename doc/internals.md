@@ -85,6 +85,6 @@ PHP strings, integers and associative arrays should map directly to the
 equivalent types on the database - string, integer, list, and map.
 
 ### Handling Unsupported Types
-The HHVM client currently does not handle types such as float, boolean and
-object. In future releases those will be handled in a similar way to the PHP
-client (Zend extension).
+PHP values which do not have a directly mappable bin type need to be handled in
+a configurable way, whether by calling a specified serializer or by throwing an
+explicit error.

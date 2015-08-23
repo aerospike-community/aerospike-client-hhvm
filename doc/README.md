@@ -20,9 +20,12 @@ extension.
 ### [Runtime Configuration](aerospike_config.md)
 ### [Aerospike Class](aerospike.md)
 ### [Lifecycle and Connection Methods](apiref_connection.md)
-### [Error Handling Methods](apiref_error.md)
+### [Error Handling and Logging Methods](apiref_error.md)
 ### [Key-Value Methods](apiref_kv.md)
 ### [Query and Scan Methods](apiref_streams.md)
+### [User Defined Methods](apiref_udf.md)
+### [Admin Methods](apiref_admin.md)
+### [Large Data Type Methods](aerospike_ldt.md)
 
 ## Implementation Status
 So far the *Runtime Configuration*, *Lifecycle and Connection Methods*, *Error*
@@ -43,15 +46,27 @@ When persistent connections are used the methods _reconnect()_ and _close()_ do
 not actually close the connection.  Those methods only apply to instances of
 class Aerospike which use non-persistent connections.
 
+## Halting a Stream
+
+Halting a _query()_ or _scan()_ result stream can be done by returning (an
+explicit) boolean **false** from the callback.  The extension will capture the
+return value from the registered PHP callback, and pass it to the C-client.
+The C-client will then close the sockets to the nodes involved in streaming
+results, effectively halting it.
+
 ## Handling Unsupported Types
 
 See: [Data Types](http://www.aerospike.com/docs/guide/data-types.html)
 See: [as_bytes.h](https://github.com/aerospike/aerospike-common/blob/master/src/include/aerospike/as_bytes.h)
+* Allow the user to register their own serializer/deserializer method
+ - OPT\_SERIALIZER : SERIALIZER\_PHP (default), SERIALIZER\_NONE, SERIALIZER\_USER
 * when a write operation runs into types that do not map directly to Aerospike DB types it checks the OPT\_SERIALIZER setting:
- - calls the PHP serializer, sets the object's as\_bytes\_type to AS\_BYTES_PHP. This is the default behavior.
+ - if SERIALIZER\_NONE it returns an Aerospike::ERR\_PARAM error
+ - if SERIALIZER\_PHP it calls the PHP serializer, sets the object's as\_bytes\_type to AS\_BYTES_PHP. This is the default behavior.
+ - if SERIALIZER\_USER it calls the PHP function the user registered a callback with Aerospike::setSerializer(), and sets as\_bytes\_type to AS\_BYTES\_BLOB
 * when a read operation extracts a value from an AS\_BYTES type bin:
  - if it’s a AS\_BYTES\_PHP use the PHP unserialize function
- - if it’s a AS\_BYTES\_BLOB place it in a PHP string
+ - if it’s a AS\_BYTES\_BLOB and the user registered a callback with Aerospike::setDeserializer() call that function, otherwise place it in a PHP string
 
 **Warning:** Strings in PHP are a binary-safe structure that allows for the
 null-byte (**\0**) to be stored inside the string, not just at its end.
