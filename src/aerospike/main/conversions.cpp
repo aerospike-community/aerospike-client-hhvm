@@ -889,6 +889,7 @@ namespace HPHP {
         const char *bin_p = NULL;
         Variant val;
         uint32_t ttl = 0;
+        bool is_op = false, is_bin = false, is_val = false, is_ttl = false;
 
         for (ArrayIter iter(php_operation); iter; ++iter) {
             Variant key = iter.first();
@@ -902,30 +903,41 @@ namespace HPHP {
 
             if ((key.toString() == s_op) && value.isInteger()) {
                 op = value.toInt64();
+                is_op = true;
             } else if ((key.toString() == s_bin) && value.isString()) {
                 bin_p = value.toString().c_str();
+                is_bin = true;
             } else if (key.toString() == s_val) {
                 val = value;
+                is_val = true;
             } else if (key.toString() == s_ttl && value.isInteger()) {
                 ttl = (uint32_t)value.toInt64();
+                is_ttl = true;
             } else {
-                if (op != AS_OPERATOR_TOUCH) {
-                    as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                            "Invalid operation: expecting an associative array (op, bin, value)");
-                } else {
-                    as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                            "Invalid operation: expecting an associative array (op, ttl)");
-                }
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Invalid operation: expecting an associative array (op, bin, val) or (op, bin) or (op, ttl)");
                 break;
             }
         }
 
-        if (!bin_p && op != AS_OPERATOR_TOUCH) {
+        if (error.code != AEROSPIKE_OK) {
+            //Error code is allready set in above for loop
+        } else if ((op != AS_OPERATOR_TOUCH && op != AS_OPERATOR_READ) && !(is_op && is_bin && is_val)) {
+            //validating associative array(op, bin, val) for operator other than
+            //TOUCH and READ
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                "Invalid operation: expecting an associative array (op, bin, value)");
+                    "Invalid operation: expecting an associative array (op, bin, val)");
+        } else if (op == AS_OPERATOR_READ && (!(is_op && is_bin) || is_val || is_ttl)) {
+            //validating associative array(op, bin) for operator READ
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Invalid operation: expecting an associative array (op, bin)");
+        } else if (op == AS_OPERATOR_TOUCH && (!(is_op && is_ttl) || is_bin || is_val)) {
+            //validating associative array(op, ttl) for operator TOUCH
+            as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Invalid operation: expecting an associative array (op, ttl)");
+        } else {
+            set_operation(operations, op, bin_p, val, static_pool, ttl, serializer_type, error);
         }
-
-        set_operation(operations, op, bin_p, val, static_pool, ttl, serializer_type, error);
 
         return error.code;
     }

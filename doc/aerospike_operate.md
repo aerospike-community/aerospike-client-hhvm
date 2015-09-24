@@ -53,6 +53,7 @@ Read Operation:
 
 Touch Operation: reset the time-to-live of the record and increment its generation
   op => Aerospike::OPERATOR_TOUCH
+  ttl => a positive integer value to set as time-to-live for the record 
 ```
 *examples:*
 ```
@@ -60,7 +61,7 @@ array(
   array("op" => Aerospike::OPERATOR_APPEND, "bin" => "name", "val" => " Ph.D."),
   array("op" => Aerospike::OPERATOR_INCR, "bin" => "age", "val" => 1),
   array("op" => Aerospike::OPERATOR_READ, "bin" => "age"),
-  array("op" => Aerospike::OPERATOR_TOUCH)
+  array("op" => Aerospike::OPERATOR_TOUCH, "ttl" => 20)
 )
 ```
 
@@ -98,7 +99,7 @@ $operations = array(
   array("op" => Aerospike::OPERATOR_APPEND, "bin" => "name", "val" => " Ph.D."),
   array("op" => Aerospike::OPERATOR_INCR, "bin" => "age", "val" => 1),
   array("op" => Aerospike::OPERATOR_READ, "bin" => "age"),
-  array("op" => Aerospike::OPERATOR_TOUCH)
+  array("op" => Aerospike::OPERATOR_TOUCH, "ttl" => 20)
 );
 $status = $db->operate($key, $operations, $returned);
 if ($status == Aerospike::OK) {
