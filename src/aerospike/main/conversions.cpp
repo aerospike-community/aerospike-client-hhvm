@@ -773,7 +773,7 @@ namespace HPHP {
         return error.code;
     }
 
-    static as_status set_operation(as_operations& operations, int32_t& op, const char *bin_p, Variant& val, StaticPoolManager& static_pool, Variant& metadata,
+    static as_status set_operation(as_operations& operations, int32_t& op, const char *bin_p, Variant& val, StaticPoolManager& static_pool, uint32_t ttl,
             int16_t serializer_type, as_error& error)
     {
         switch (op) {
@@ -833,23 +833,9 @@ namespace HPHP {
                 }
         case AS_OPERATOR_TOUCH:
                 {
-                    if (!(metadata.isArray() || metadata.isNull())) {
-                        return as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                                "Invalid type of metadata: expecting an associative array(ttl, generation)");
-                    } else {
-                        Array meta = metadata.toArray();
-                        if (meta.exists(s_ttl) && meta[s_ttl].isInteger()) {
-                            operations.ttl = meta[s_ttl].toInt64();
-                        }
-
-                        if (meta.exists(s_generation) && meta[s_generation].isInteger()) {
-                            operations.gen = meta[s_generation].toInt32();
-                        }
-
-                        if (!as_operations_add_touch(&operations)) {
-                            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                                    "Unable to touch");
-                        }
+                    operations.ttl = ttl;
+                    if (!as_operations_add_touch(&operations)) {
+                            return as_error_update(&error, AEROSPIKE_ERR_PARAM, "Unable to touch");
                     }
                     break;
                 }
@@ -902,7 +888,7 @@ namespace HPHP {
         int32_t op = 0;
         const char *bin_p = NULL;
         Variant val;
-        Variant metadata;
+        uint32_t ttl = 0;
 
         for (ArrayIter iter(php_operation); iter; ++iter) {
             Variant key = iter.first();
@@ -920,11 +906,16 @@ namespace HPHP {
                 bin_p = value.toString().c_str();
             } else if (key.toString() == s_val) {
                 val = value;
-            } else if (key.toString() == s_metadata) {
-                metadata = value;
+            } else if (key.toString() == s_ttl && value.isInteger()) {
+                ttl = (uint32_t)value.toInt64();
             } else {
-                as_error_update(&error, AEROSPIKE_ERR_PARAM,
-                        "Invalid operation: expecting an associative array (op, bin, value)");
+                if (op != AS_OPERATOR_TOUCH) {
+                    as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                            "Invalid operation: expecting an associative array (op, bin, value)");
+                } else {
+                    as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                            "Invalid operation: expecting an associative array (op, ttl)");
+                }
                 break;
             }
         }
@@ -934,7 +925,7 @@ namespace HPHP {
                 "Invalid operation: expecting an associative array (op, bin, value)");
         }
 
-        set_operation(operations, op, bin_p, val, static_pool, metadata, serializer_type, error);
+        set_operation(operations, op, bin_p, val, static_pool, ttl, serializer_type, error);
 
         return error.code;
     }
