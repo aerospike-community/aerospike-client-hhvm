@@ -922,7 +922,7 @@ namespace HPHP {
 
         if (error.code != AEROSPIKE_OK) {
             //Error code is allready set in above for loop
-        } else if ((op != AS_OPERATOR_TOUCH && op != AS_OPERATOR_READ) && !(is_op && is_bin && is_val)) {
+        } else if ((op != AS_OPERATOR_TOUCH && op != AS_OPERATOR_READ) && (!(is_op && is_bin && is_val) || is_ttl)) {
             //validating associative array(op, bin, val) for operator other than
             //TOUCH and READ
             as_error_update(&error, AEROSPIKE_ERR_PARAM,
