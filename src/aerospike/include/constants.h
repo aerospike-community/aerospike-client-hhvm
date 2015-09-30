@@ -33,7 +33,8 @@ namespace HPHP {
         OPT_POLICY_GEN,
         OPT_POLICY_REPLICA,       /* set to one of Aerospike::POLICY_REPLICA_* */
         OPT_POLICY_CONSISTENCY,   /* set to one of Aerospike::POLICY_CONSISTENCY_* */
-        OPT_POLICY_COMMIT_LEVEL   /* set to one of Aerospike::POLICY_COMMIT_LEVEL_* */
+        OPT_POLICY_COMMIT_LEVEL,  /* set to one of Aerospike::POLICY_COMMIT_LEVEL_* */
+        OPT_TTL                   /* set to time-to-live of the record in seconds */
     };
 
     /*
