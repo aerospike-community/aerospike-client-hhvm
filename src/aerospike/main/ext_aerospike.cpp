@@ -689,15 +689,8 @@ namespace HPHP {
                 if (AEROSPIKE_OK == php_operations_to_as_operations(php_operations,
                             operations, static_pool, serializer_option, error)) {
                     if (AEROSPIKE_OK == policy_manager.set_generation_value(&operations.gen,
-                                options, error)) {
-                        /*
-                         * This check is placed because OPT_TTL is a valid constant
-                         * for append(), prepend(), increment() and operate() API's.
-                         */
-                        if (operations.binops.entries->op != AS_OPERATOR_TOUCH) {
-                            policy_manager.set_ttl_value(&operations.ttl,
-                                    options, error);
-                        }
+                                options, error) && (AEROSPIKE_OK == policy_manager.set_ttl_value(&operations.ttl,
+                                    options, error))) {
                         aerospike_key_operate(data->as_ref_p->as_p, &error,
                                 &operate_policy, &key, &operations, &rec_p);
                         Array php_rec = Array::Create();
