@@ -1579,6 +1579,10 @@ namespace HPHP {
                         "aerospike.udf.lua_user_path",
                         "/opt/aerospike/client-php/usr-lua",
                         &ini_entry.lua_user_path);
+                IniSetting::Bind(this, IniSetting::PHP_INI_ALL,
+                        "aerospike.shm.shm_key",
+                        "0xA5000000",
+                        &ini_entry.shm_key);
             }
 
             void moduleShutdown() override
@@ -1618,6 +1622,7 @@ namespace HPHP {
                 persistent_list.erase(persistent_list.begin(), persistent_list.end());
                 pthread_rwlock_wrlock(&connection_mutex);
             }
+            //free_shm_key();
     } s_aerospike_extension;
 
     HHVM_GET_MODULE(aerospike);

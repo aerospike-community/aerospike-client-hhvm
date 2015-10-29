@@ -11,6 +11,38 @@ namespace HPHP {
      *******************************************************************************************
      */
 
+
+    /*
+     * Aerospike extension globals
+     */
+     std::unordered_map<std::string, int > shm_key_list;
+
+    /*
+     * Aerospike extension globals
+     */
+     int shm_key_counter = 0xA5000000;
+    /*
+    ************************************************************************************
+    * This macro will create key in the unordered_map.
+    * Which is host_entry => address:port.
+    * ************************************************************************************
+    */
+
+     char* create_alias(char *alias_to_search,int iter_hosts, as_config& config,
+            as_error& error){
+        char               port[MAX_PORT_SIZE];
+
+        alias_to_search = (char*) malloc(strlen(config.hosts[iter_hosts].addr) +
+            MAX_PORT_SIZE + 1);
+        as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+            "Memory allocation failed for create alias");
+        strcpy(alias_to_search, config.hosts[iter_hosts].addr);
+        strcat(alias_to_search,(char *) ":");
+        sprintf(port , "%d", config.hosts[iter_hosts].port);
+        strcat(alias_to_search, port);
+        return alias_to_search;
+     }
+
     /*
      *******************************************************************************************
      * Constructor for static pool
@@ -305,7 +337,94 @@ namespace HPHP {
         return error.code;
     }
 
+
     /*
+     *******************************************************************************************
+     * Helper function to checkwhether the shm_key exists
+     ********************************************************************************************
+     */
+    bool is_unique_shm_key(int shm_key)
+    {
+        int map_entry;
+        auto it = shm_key_list.begin();
+        while (it != shm_key_list.end()) {
+            map_entry = it->second;
+            //if (map_entry) {
+            if(map_entry == shm_key){
+                return false;
+            }
+                    ++it;
+        }
+        return true;
+    }
+    /*
+     *******************************************************************************************
+     * Helper function to generate unique shm_key for the cluster 
+     *******************************************************************************************
+     */
+    static int generate_unique_shm_key()
+    {
+        while(true){
+           if(is_unique_shm_key(shm_key_counter)){
+               int unique_shm_key=shm_key_counter;
+               shm_key_counter++;                      //incremented counter for next use
+               return unique_shm_key;
+           } else{
+                shm_key_counter++;                     //incremented counter as the value is already used
+           }
+
+        }
+    }
+     /*
+     *******************************************************************************************
+     * Helper function to return shm_key for the cluster
+     *******************************************************************************************
+     */
+    static int verify_shm_key_store_it(int shm_key, as_config& config)
+    {
+
+        std::string         ini_value;
+        char                *alias_to_search = NULL;
+        int                 unique_shm_key =-1;
+        int                 iter_hosts;
+        //char*              alias_to_search=NULL;
+        //char               port[MAX_PORT_SIZE];
+
+        as_error error;
+        as_error_init(&error);
+
+        for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
+            alias_to_search = (char*) malloc(strlen(config.hosts[iter_hosts].addr) +
+                MAX_PORT_SIZE + 1);
+            alias_to_search = create_alias(alias_to_search,iter_hosts, config,error);
+            std::unordered_map<std::string,int>::const_iterator iter = shm_key_list.find (alias_to_search);
+            if(iter != shm_key_list.end()){
+                unique_shm_key = iter->second;
+                break;
+            }
+            if (alias_to_search) {
+                free(alias_to_search);
+                alias_to_search = NULL;
+            }
+        }
+        if(unique_shm_key == -1){
+            if(is_unique_shm_key(shm_key)){
+                unique_shm_key = shm_key;
+            }
+            else{
+                unique_shm_key = generate_unique_shm_key();
+            }
+        }
+        for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
+            alias_to_search=create_alias(alias_to_search,iter_hosts,config,error);
+        as_error error;
+        as_error_init(&error);
+            shm_key_list[alias_to_search] = unique_shm_key;
+        }
+        return unique_shm_key;
+    }
+
+     /*
      *******************************************************************************************
      * Helper function to check if shm is to be enabled in the php.ini and
      * configure the shm parameters within the supplied as_config.
@@ -329,6 +448,39 @@ namespace HPHP {
     }
 
     /*
+     *******************************************************************************************
+     * Helper function to check if shm is to be enabled in the php.ini and
+     * configure the shm key within the supplied as_config.
+     *******************************************************************************************
+     */
+    static void configure_shm_key(as_config& config)
+    {
+        std::string ini_value;
+        if (IniSetting::Get("aerospike.shm.use", ini_value)) {
+            /*config.shm_key =
+                IniSetting::Get("aerospike.shm.shm_key", ini_value) ? verify_shm_key_store_it((int)atoi(ini_value.c_str()), config) :generate_unique_shm_key();*/
+            if (IniSetting::Get("aerospike.shm.shm_key", ini_value)) {
+                config.shm_key = verify_shm_key_store_it((int)atoi(ini_value.c_str()), config);
+            } else {
+                //config.shm_key = generate_unique_shm_key();
+            }
+                //IniSetting::Get("aerospike.shm.shm_key", ini_value) ?(int) atoi(ini_value.c_str()) : 40;
+        } else {
+            config.use_shm = false;
+        }
+    }
+    /*
+     *******************************************************************************************
+     * Function to free shm key list
+     *******************************************************************************************
+     */
+    static void free_shm_key()
+    {
+        as_error error;
+        as_error_init(&error);
+        shm_key_list.erase(shm_key_list.begin(), shm_key_list.end());
+    }
+     /*
      *******************************************************************************************
      * Conversion APIs
      *******************************************************************************************
@@ -401,7 +553,7 @@ namespace HPHP {
             config.hosts[i].port = host[s_port].isInteger() ? host[s_port].toInt64() : host[s_port].isString() ? atoi(host[s_port].toString().c_str()) : 0;
             config.hosts_size++;
         }
-        
+        configure_shm_key(config);
         return error.code;
     }
 
