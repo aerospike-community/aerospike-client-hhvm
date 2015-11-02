@@ -28,19 +28,27 @@ namespace HPHP {
     * ************************************************************************************
     */
 
-     char* create_alias(char *alias_to_search,int iter_hosts, as_config& config,
+     as_status create_alias(char **alias_to_search,int iter_hosts, as_config& config,
             as_error& error){
         char               port[MAX_PORT_SIZE];
-
-        alias_to_search = (char*) malloc(strlen(config.hosts[iter_hosts].addr) +
-            MAX_PORT_SIZE + 1);
-        as_error_update(&error, AEROSPIKE_ERR_CLIENT,
-            "Memory allocation failed for create alias");
-        strcpy(alias_to_search, config.hosts[iter_hosts].addr);
-        strcat(alias_to_search,(char *) ":");
+        int                 alias_length;
+        alias_length = strlen(config.hosts[iter_hosts].addr) +
+            MAX_PORT_SIZE + strlen(config.user)+ 3;
+        *alias_to_search = (char*) malloc(alias_length);
+        memset(*alias_to_search,'\0', alias_length);
+        if(*alias_to_search == NULL){
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                "Memory allocation failed for create alias");
+            return error.code;
+        }
+        strcpy(*alias_to_search, config.hosts[iter_hosts].addr);
+        strcat(*alias_to_search,(char *) ":");
         sprintf(port , "%d", config.hosts[iter_hosts].port);
-        strcat(alias_to_search, port);
-        return alias_to_search;
+        strcat(*alias_to_search, port);
+        strcat(*alias_to_search,(char *) ":");
+        strcat(*alias_to_search, config.user);
+        strcat(*alias_to_search,(char *) ";");
+        return error.code;
      }
 
     /*
@@ -380,48 +388,52 @@ namespace HPHP {
      * Helper function to return shm_key for the cluster
      *******************************************************************************************
      */
-    static int verify_shm_key_store_it(int shm_key, as_config& config)
+    static void verify_shm_key_store_it(as_config& config, as_error& error)
     {
 
         std::string         ini_value;
         char                *alias_to_search = NULL;
         int                 unique_shm_key =-1;
         int                 iter_hosts;
-        //char*              alias_to_search=NULL;
-        //char               port[MAX_PORT_SIZE];
+        char                *alias_host_port=NULL;
 
-        as_error error;
-        as_error_init(&error);
-
+        int alias_length=0;
         for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
-            alias_to_search = (char*) malloc(strlen(config.hosts[iter_hosts].addr) +
-                MAX_PORT_SIZE + 1);
-            alias_to_search = create_alias(alias_to_search,iter_hosts, config,error);
-            std::unordered_map<std::string,int>::const_iterator iter = shm_key_list.find (alias_to_search);
-            if(iter != shm_key_list.end()){
-                unique_shm_key = iter->second;
-                break;
+            alias_length += strlen(config.hosts[iter_hosts].addr) +
+            MAX_PORT_SIZE + 3 + strlen(config.user);
+        }
+        alias_to_search = (char*) malloc(alias_length);
+        if(alias_to_search == NULL){
+            as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                "Memory allocation failed for create alias");
+            return ;
+        }
+        printf("alias length %d",alias_length);
+        memset(alias_to_search,'\0', alias_length);
+        for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
+            if(AEROSPIKE_OK != create_alias(&alias_host_port,iter_hosts, config,error)){
+                return ;
             }
-            if (alias_to_search) {
-                free(alias_to_search);
-                alias_to_search = NULL;
-            }
+            strcat(alias_to_search , alias_host_port);
+        }
+        std::unordered_map<std::string,int>::const_iterator iter = shm_key_list.find (alias_to_search);
+        if(iter != shm_key_list.end()){
+            unique_shm_key = iter->second;
         }
         if(unique_shm_key == -1){
-            if(is_unique_shm_key(shm_key)){
-                unique_shm_key = shm_key;
+           if(is_unique_shm_key(config.shm_key)){
+                unique_shm_key = config.shm_key;
             }
             else{
                 unique_shm_key = generate_unique_shm_key();
             }
-        }
-        for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
-            alias_to_search=create_alias(alias_to_search,iter_hosts,config,error);
-        as_error error;
-        as_error_init(&error);
             shm_key_list[alias_to_search] = unique_shm_key;
         }
-        return unique_shm_key;
+        if (alias_to_search) {
+            free(alias_to_search);
+            alias_to_search = NULL;
+        }
+        return ;
     }
 
      /*
@@ -430,12 +442,15 @@ namespace HPHP {
      * configure the shm parameters within the supplied as_config.
      *******************************************************************************************
      */
-    static void check_and_configure_shm(as_config& config)
+    static void check_and_configure_shm(const Array& php_config, as_config& config,as_error& error)
     {
+
         std::string ini_value;
         
         if (IniSetting::Get("aerospike.shm.use", ini_value)) {
             config.use_shm = true;
+            config.shm_key =
+                IniSetting::Get("aerospike.shm.key", ini_value) ? (uint32_t) atoi(ini_value.c_str()) : 0xA5000000;
             config.shm_max_nodes =
                 IniSetting::Get("aerospike.shm.max_nodes", ini_value) ? (uint32_t) atoi(ini_value.c_str()) : 16;
             config.shm_max_namespaces =
@@ -445,6 +460,48 @@ namespace HPHP {
         } else {
             config.use_shm = false;
         }
+        if(php_config.exists(s_shm)){
+            Array shm_array = php_config[s_shm].toArray();
+            
+            if (shm_array.exists(s_shm_key) &&
+                    (!shm_array[s_shm_key].isInteger() && !shm_array[s_shm_key].isString())) {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Invalid shm array: Value for shm key is invalid");
+                return;
+            } else if (shm_array.exists(s_shm_key)) {
+                config.shm_key = shm_array[s_shm_key].isInteger() ? shm_array[s_shm_key].toInt64() : shm_array[s_shm_key].isString() ? 
+                    atoi(shm_array[s_shm_key].toString().c_str()) : config.shm_key;
+            }
+            if (shm_array.exists(s_shm_max_nodes) &&
+                    (!shm_array[s_shm_max_nodes].isInteger() && !shm_array[s_shm_max_nodes].isString())) {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Invalid shm array: Value for shm max nodes is invalid");
+                return;
+            } else if (shm_array.exists(s_shm_max_nodes)) {
+                config.shm_max_nodes = shm_array[s_shm_max_nodes].isInteger() ? shm_array[s_shm_max_nodes].toInt64() : shm_array[s_shm_max_nodes].isString() ? 
+                    atoi(shm_array[s_shm_max_nodes].toString().c_str()) : config.shm_max_nodes;
+            }
+            if (shm_array.exists(s_shm_max_namespaces) &&
+                    (!shm_array[s_shm_max_namespaces].isInteger() && !shm_array[s_shm_max_namespaces].isString())) {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Invalid shm array: Value for shm max namespaces is invalid");
+                return;
+            } else if (shm_array.exists(s_shm_max_namespaces)) {
+                config.shm_max_namespaces = shm_array[s_shm_max_namespaces].isInteger() ? shm_array[s_shm_max_namespaces].toInt64() :
+                    shm_array[s_shm_max_namespaces].isString() ? atoi(shm_array[s_shm_max_namespaces].toString().c_str()) : config.shm_max_namespaces;
+            }
+            if (shm_array.exists(s_shm_takeover_threshold_sec) &&
+                    (!shm_array[s_shm_takeover_threshold_sec].isInteger() && !shm_array[s_shm_takeover_threshold_sec].isString())) {
+                as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "Invalid shm array: Value for shm threshold threshold sec is invalid");
+                return;
+            } else if (shm_array.exists(s_shm_takeover_threshold_sec)) {
+                config.shm_takeover_threshold_sec = shm_array[s_shm_takeover_threshold_sec].isInteger() ? shm_array[s_shm_takeover_threshold_sec].toInt64() : 
+                    shm_array[s_shm_takeover_threshold_sec].isString() ? atoi(shm_array[s_shm_takeover_threshold_sec].toString().c_str()) : 
+                    config.shm_takeover_threshold_sec;
+            }
+
+        }
     }
 
     /*
@@ -453,21 +510,11 @@ namespace HPHP {
      * configure the shm key within the supplied as_config.
      *******************************************************************************************
      */
-    static void configure_shm_key(as_config& config)
+    static int configure_shm_key(as_config& config, as_error& error)
     {
-        std::string ini_value;
-        if (IniSetting::Get("aerospike.shm.use", ini_value)) {
-            /*config.shm_key =
-                IniSetting::Get("aerospike.shm.shm_key", ini_value) ? verify_shm_key_store_it((int)atoi(ini_value.c_str()), config) :generate_unique_shm_key();*/
-            if (IniSetting::Get("aerospike.shm.shm_key", ini_value)) {
-                config.shm_key = verify_shm_key_store_it((int)atoi(ini_value.c_str()), config);
-            } else {
-                //config.shm_key = generate_unique_shm_key();
-            }
-                //IniSetting::Get("aerospike.shm.shm_key", ini_value) ?(int) atoi(ini_value.c_str()) : 40;
-        } else {
-            config.use_shm = false;
-        }
+
+        verify_shm_key_store_it(config,error);
+        return error.code;
     }
     /*
      *******************************************************************************************
@@ -512,9 +559,14 @@ namespace HPHP {
                     "Invalid config array: Value of hosts is expected to be an array");
         }
 
+        if (php_config.exists(s_shm) && !(php_config[s_shm].isArray())) {
+            return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                    "Invalid config array: Value of shm is expected to be an array");
+        }
+
         Array hosts_array = php_config[s_hosts].toArray();
         as_config_init(&config);
-        check_and_configure_shm(config);
+        check_and_configure_shm(php_config,config,error);
 
         if (php_config.exists(s_user) && php_config.exists(s_pass) &&
                 !php_config[s_user].isNull() && !php_config[s_pass].isNull()) {
@@ -553,7 +605,9 @@ namespace HPHP {
             config.hosts[i].port = host[s_port].isInteger() ? host[s_port].toInt64() : host[s_port].isString() ? atoi(host[s_port].toString().c_str()) : 0;
             config.hosts_size++;
         }
-        configure_shm_key(config);
+        if(AEROSPIKE_OK !=configure_shm_key(config,error)) {
+            return error.code;
+        }
         return error.code;
     }
 
