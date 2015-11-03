@@ -23,32 +23,39 @@ namespace HPHP {
      int shm_key_counter = 0xA5000000;
     /*
     ************************************************************************************
-    * This macro will create key in the unordered_map.
-    * Which is host_entry => address:port.
+    * This function will create key in the unordered_map.
+    * Which is host_entry => address:port:user;
+    *
+    * @param alias_to_search    the string with host:port:user;
+    * @param iter_host          the iterator for config. hosts;
+    * @param config             as_config reference to be populated by this function
+    * @param error              as_error reference to be populated by this function
+    *                           in case of error
+    * @return                   alias_to_search created in this function
     * ************************************************************************************
     */
 
-     as_status create_alias(char **alias_to_search,int iter_hosts, as_config& config,
+     char* create_alias(char *alias_to_search,int iter_hosts, as_config& config,
             as_error& error){
         char               port[MAX_PORT_SIZE];
         int                 alias_length;
         alias_length = strlen(config.hosts[iter_hosts].addr) +
             MAX_PORT_SIZE + strlen(config.user)+ 3;
-        *alias_to_search = (char*) malloc(alias_length);
-        memset(*alias_to_search,'\0', alias_length);
-        if(*alias_to_search == NULL){
+        alias_to_search = (char*) malloc(alias_length);
+        memset(alias_to_search,'\0', alias_length);
+        if(alias_to_search == NULL){
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                 "Memory allocation failed for create alias");
-            return error.code;
+            return NULL;
         }
-        strcpy(*alias_to_search, config.hosts[iter_hosts].addr);
-        strcat(*alias_to_search,(char *) ":");
+        strcpy(alias_to_search, config.hosts[iter_hosts].addr);
+        strcat(alias_to_search,(char *) ":");
         sprintf(port , "%d", config.hosts[iter_hosts].port);
-        strcat(*alias_to_search, port);
-        strcat(*alias_to_search,(char *) ":");
-        strcat(*alias_to_search, config.user);
-        strcat(*alias_to_search,(char *) ";");
-        return error.code;
+        strcat(alias_to_search, port);
+        strcat(alias_to_search,(char *) ":");
+        strcat(alias_to_search, config.user);
+        strcat(alias_to_search,(char *) ";");
+        return alias_to_search;
      }
 
     /*
@@ -386,9 +393,13 @@ namespace HPHP {
      /*
      *******************************************************************************************
      * Helper function to return shm_key for the cluster
+     * @param config        as_config reference to be populated by this function
+     * @param error         as_error reference to be populated by this function
+     *                      in case of error
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
      *******************************************************************************************
      */
-    static void verify_shm_key_store_it(as_config& config, as_error& error)
+    static as_status verify_shm_key_store_it(as_config& config, as_error& error)
     {
 
         std::string         ini_value;
@@ -396,8 +407,7 @@ namespace HPHP {
         int                 unique_shm_key =-1;
         int                 iter_hosts;
         char                *alias_host_port=NULL;
-
-        int alias_length=0;
+        int                 alias_length=0;
         for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
             alias_length += strlen(config.hosts[iter_hosts].addr) +
             MAX_PORT_SIZE + 3 + strlen(config.user);
@@ -406,13 +416,12 @@ namespace HPHP {
         if(alias_to_search == NULL){
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                 "Memory allocation failed for create alias");
-            return ;
+            return error.code;
         }
-        printf("alias length %d",alias_length);
         memset(alias_to_search,'\0', alias_length);
         for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
-            if(AEROSPIKE_OK != create_alias(&alias_host_port,iter_hosts, config,error)){
-                return ;
+            if(NULL == ( alias_host_port= create_alias(alias_host_port,iter_hosts, config,error)) || (error.code != AEROSPIKE_OK)){
+                return error.code;
             }
             strcat(alias_to_search , alias_host_port);
         }
@@ -428,12 +437,13 @@ namespace HPHP {
                 unique_shm_key = generate_unique_shm_key();
             }
             shm_key_list[alias_to_search] = unique_shm_key;
+            config.shm_key = unique_shm_key;
         }
         if (alias_to_search) {
             free(alias_to_search);
             alias_to_search = NULL;
         }
-        return ;
+        return error.code;
     }
 
      /*
@@ -506,18 +516,6 @@ namespace HPHP {
 
     /*
      *******************************************************************************************
-     * Helper function to check if shm is to be enabled in the php.ini and
-     * configure the shm key within the supplied as_config.
-     *******************************************************************************************
-     */
-    static int configure_shm_key(as_config& config, as_error& error)
-    {
-
-        verify_shm_key_store_it(config,error);
-        return error.code;
-    }
-    /*
-     *******************************************************************************************
      * Function to free shm key list
      *******************************************************************************************
      */
@@ -567,7 +565,9 @@ namespace HPHP {
         Array hosts_array = php_config[s_hosts].toArray();
         as_config_init(&config);
         check_and_configure_shm(php_config,config,error);
-
+        if(error.code!= AEROSPIKE_OK){
+            return error.code;
+        }
         if (php_config.exists(s_user) && php_config.exists(s_pass) &&
                 !php_config[s_user].isNull() && !php_config[s_pass].isNull()) {
             const char* username = php_config[s_user].toString().c_str();
@@ -605,7 +605,7 @@ namespace HPHP {
             config.hosts[i].port = host[s_port].isInteger() ? host[s_port].toInt64() : host[s_port].isString() ? atoi(host[s_port].toString().c_str()) : 0;
             config.hosts_size++;
         }
-        if(AEROSPIKE_OK !=configure_shm_key(config,error)) {
+        if(AEROSPIKE_OK != verify_shm_key_store_it(config,error)) {
             return error.code;
         }
         return error.code;
