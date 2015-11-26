@@ -30,6 +30,7 @@ namespace HPHP {
         std::string log_level;
         std::string log_path;
         bool        shm_use;
+        int         shm_key;
         int64_t     shm_max_nodes;
         int64_t     shm_max_namespaces;
         int64_t     shm_takeover_threshold_sec;

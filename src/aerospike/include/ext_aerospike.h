@@ -71,7 +71,12 @@ namespace HPHP {
     const StaticString s_status("status");
     const StaticString s_udf_module_name("name");
     const StaticString s_udf_module_type("type");
-
+    const StaticString s_shm("shm");
+    const StaticString s_shm_key("shm_key");
+    const StaticString s_shm_max_nodes("shm_max_nodes");
+    const StaticString s_shm_max_namespaces("shm_max_namespaces");
+    const StaticString s_shm_takeover_threshold_sec("shm_takeover_threshold_sec");
+    
     /*
      ************************************************************************************
      * Aerospike class to maintain the following data:
