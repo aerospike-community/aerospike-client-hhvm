@@ -69,7 +69,7 @@ To implement an LRU you can read a bin and touch a record in the same
 operation:
 ```
 array(
-  array("op" => Aerospike::OPERATOR_READ, "bin" => "age")
+  array("op" => Aerospike::OPERATOR_READ, "bin" => "age"),
   array("op" => Aerospike::OPERATOR_TOUCH, "ttl" => 20)
 )
 ```
