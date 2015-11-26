@@ -57,6 +57,8 @@ namespace HPHP {
      * in the config's global defaults by parsing the user's options array.
      * 3. Use set_generation_value() method to set the generation value within
      * the passed pointer by parsing the user's options array.
+     * 4. Use set_ttl_value() method to set the time-to-live value within
+     * the passed pointer by parsing the user's options array.
      ************************************************************************************
      */
     class PolicyManager {
@@ -80,6 +82,7 @@ namespace HPHP {
             as_status set_policy(int16_t *serializer_value, int16_t global_serializer_val, const Variant& options, as_error& error);
             as_status set_global_defaults(int16_t *serializer_value, const Variant& options, as_error& error);
             as_status set_generation_value(uint16_t *gen_value, const Variant& options, as_error& error);
+            as_status set_ttl_value(uint32_t *ttl_value_p, const Variant& options_variant, as_error& error);
 
 /*
  *******************************************************************************************

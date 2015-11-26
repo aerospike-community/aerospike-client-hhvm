@@ -16,6 +16,9 @@ class Operate  extends AerospikeTestCommon
         $key = $this->db->initKey("test", "demo", "operate_key");
         $this->db->put($key,array("first_name"=>"John","last_name"=>"Smith","age"=>25));
         $this->keys[] = $key;
+        $key = $this->db->initKey("test", "demo", "operate_bin");
+        $this->db->put($key,array("Athlete" => "Dan"));
+        $this->keys[] = $key;
     }
 
     /**
@@ -569,6 +572,36 @@ class Operate  extends AerospikeTestCommon
                 return AEROSPIKE::OK;
             }
         }
+    }
+
+    /**
+     * @test
+     * operate() with OPT_TTL option
+     *
+     * @pre
+     * Connect using aerospike object to the specified node
+     *
+     * @post
+     * newly initialized Aerospike objects
+     *
+     * @remark
+     * Variants: OO (bug_CLIENT_511)
+     *
+     * @test_plans{1.1}
+     */
+    function bug_CLIENT_511() {
+        $key = $this->keys[1];
+        $ops = [["op"=>Aerospike::OPERATOR_APPEND, "bin"=>"Athlete", "val"=>" Millman"],
+            ["op"=>Aerospike::OPERATOR_READ, "bin"=>"Athlete"]];
+        $status = $this->db->operate($key, $ops, $returned, array(Aerospike::OPT_TTL=>2));
+        if ($status == Aerospike::OK && strcmp($returned["Athlete"], "Dan Millman") == 0) {
+            sleep(3);
+            $status = $this->db->get($key, $get_record);
+            if (strcmp($this->db->error(), "AEROSPIKE_ERR_RECORD_NOT_FOUND") == 0) {
+                return Aerospike::OK;
+            }
+        }
+        return $status;
     }
 }
 ?>

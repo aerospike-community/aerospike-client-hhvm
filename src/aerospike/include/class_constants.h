@@ -116,6 +116,7 @@ namespace HPHP {
         { AS_OPERATOR_PREPEND                   ,   "OPERATOR_PREPEND"                  },
         { AS_OPERATOR_APPEND                    ,   "OPERATOR_APPEND"                   },
         { AS_OPERATOR_TOUCH                     ,   "OPERATOR_TOUCH"                    },
+        { OPT_TTL                               ,   "OPT_TTL"                           },
 };
 
 #define EXTENSION_CONSTANTS_SIZE (sizeof(extension_constants)/sizeof(aerospike_constants))

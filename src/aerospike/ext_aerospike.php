@@ -114,9 +114,9 @@ class Aerospike {
         return $this->operate($key, $operations, $returned, $options);
     }
 
-    public function touch(array $key, int $ttl = 0/*, int $generation = 0*/, mixed $options = NULL): int {
+    public function touch(array $key, int $ttl = 0, mixed $options = NULL): int {
         $returned = NULL;
-        $operations = array(array("op" => self::OPERATOR_TOUCH, "metadata" => array("ttl" => $ttl/*, "generation" => $generation*/)));
+        $operations = array(array("op" => self::OPERATOR_TOUCH, "ttl" => $ttl));
         return $this->operate($key, $operations, $returned, $options);
     }
 }

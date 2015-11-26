@@ -26,6 +26,7 @@ bin named *bin* set to the integer value *offset* (the so-called 'upsert').
 
 **[options](aerospike.md)** including
 - **Aerospike::OPT_WRITE_TIMEOUT**
+- **Aerospike::OPT_TTL**
 - **[Aerospike::OPT_POLICY_RETRY](http://www.aerospike.com/apidocs/c/db/d65/group__client__policies.html#gaa9730980a8b0eda8ab936a48009a6718)**
 - **[Aerospike::OPT_POLICY_KEY](http://www.aerospike.com/apidocs/c/db/d65/group__client__policies.html#gaa9c8a79b2ab9d3812876c3ec5d1d50ec)**
 - **[Aerospike::OPT_POLICY_GEN](http://www.aerospike.com/apidocs/c/db/d65/group__client__policies.html#ga38c1a40903e463e5d0af0141e8c64061)**
@@ -52,7 +53,8 @@ if (!$db->isConnected()) {
 }
 
 $key = $db->initKey("test", "users", 1234);
-$status = $db->increment($key, 'pto', -4);
+$options = array(Aerospike::OPT_TTL => 7200);
+$status = $db->increment($key, 'pto', -4, $options);
 if ($status == Aerospike::OK) {
     echo "Decremented four vacation days from the user's PTO balance.\n";
 } else {

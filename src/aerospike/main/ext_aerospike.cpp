@@ -688,17 +688,18 @@ namespace HPHP {
                         data->serializer_value, options, error)) {
                 if (AEROSPIKE_OK == php_operations_to_as_operations(php_operations,
                             operations, static_pool, serializer_option, error)) {
-                    policy_manager.set_generation_value(&operations.gen,
-                            options, error);
-                    as_record_init(rec_p, 0);
-                    aerospike_key_operate(data->as_ref_p->as_p, &error,
-                            &operate_policy, &key, &operations, &rec_p);
-                    Array php_rec = Array::Create();
-                    if (rec_p) {
-                        bins_to_php_bins(rec_p, php_rec, error);
-                        as_record_destroy(rec_p);
+                    if (AEROSPIKE_OK == policy_manager.set_generation_value(&operations.gen,
+                                options, error) && (AEROSPIKE_OK == policy_manager.set_ttl_value(&operations.ttl,
+                                    options, error))) {
+                        aerospike_key_operate(data->as_ref_p->as_p, &error,
+                                &operate_policy, &key, &operations, &rec_p);
+                        Array php_rec = Array::Create();
+                        if (rec_p) {
+                            bins_to_php_bins(rec_p, php_rec, error);
+                            as_record_destroy(rec_p);
+                        }
+                        returned.assignIfRef(php_rec);
                     }
-                    returned.assignIfRef(php_rec);
                 }
             }
         }
@@ -786,11 +787,15 @@ namespace HPHP {
                     AEROSPIKE_OK == policy_manager.set_policy(NULL,
                         data->serializer_value, options, error)) {
                 as_record_inita(&record, bins.size());
-                policy_manager.set_generation_value(&record.gen,
-                        options, error);
-                if (AEROSPIKE_OK == set_nil_bins(&record, bins, error)) {
-                    aerospike_key_put(data->as_ref_p->as_p, &error,
-                            &write_policy, &key, &record);
+                if (AEROSPIKE_OK == policy_manager.set_generation_value(&record.gen,
+                            options, error)) {
+                    if (AEROSPIKE_OK == policy_manager.set_ttl_value(&record.ttl,
+                                options, error)) {
+                        if (AEROSPIKE_OK == set_nil_bins(&record, bins, error)) {
+                            aerospike_key_put(data->as_ref_p->as_p, &error,
+                                    &write_policy, &key, &record);
+                        }
+                    }
                 }
                 as_record_destroy(&record);
             }
