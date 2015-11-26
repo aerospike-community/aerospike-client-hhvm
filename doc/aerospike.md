@@ -71,6 +71,7 @@ class Aerospike
     const OPT_POLICY_REPLICA;     // set to one of Aerospike::POLICY_REPLICA_*
     const OPT_POLICY_CONSISTENCY; // set to one of Aerospike::POLICY_CONSISTENCY_*
     const OPT_POLICY_COMMIT_LEVEL;// set to one of Aerospike::POLICY_COMMIT_LEVEL_*
+    const OPT_TTL;                // record ttl, value in seconds
 
     // Aerospike Status Codes:
     //
