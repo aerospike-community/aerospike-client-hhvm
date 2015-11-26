@@ -168,6 +168,41 @@ namespace HPHP {
 
     /*
      *******************************************************************************************
+     * Function for setting the time-to-live value inside the as_record/as_operations parameter.
+     *
+     * @param ttl_value_p       The ttl field to be set inside
+     *                          as_record/as_operations.
+     * @param options_variant   The user's optional policy options to be used if
+     *                          set
+     * @param error             as_error reference to be populated by this function
+     *                          in case of error
+     *
+     * @return AEROSPIKE_OK if success. Otherwise AEROSPIKE_ERR_*.
+     *******************************************************************************************
+     */
+    as_status PolicyManager::set_ttl_value(uint32_t *ttl_value_p, const Variant& options_variant, as_error& error)
+    {
+        as_error_reset(&error);
+
+        if (!ttl_value_p) {
+            return as_error_update(&error, AEROSPIKE_ERR_CLIENT,
+                    "TTL is null");
+        }
+
+        Array options = options_variant.toArray();
+        if (options.exists(OPT_TTL)) {
+            if (options[OPT_TTL].isInteger()) {
+                *ttl_value_p = options[OPT_TTL].toInt32();
+            } else {
+                return as_error_update(&error, AEROSPIKE_ERR_PARAM,
+                        "TTL value should be of integer type");
+            }
+        }
+
+        return error.code;
+    }
+    /*
+     *******************************************************************************************
      * Wrapper function for setting the relevant aerospike policies by using the user's
      * optional policy options (if set)
      *

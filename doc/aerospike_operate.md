@@ -52,14 +52,23 @@ Read Operation:
   bin => name of the bin we want to read after any write operations
 
 Touch Operation: reset the time-to-live of the record and increment its generation
+                 (only combines with read operations)
   op => Aerospike::OPERATOR_TOUCH
-  ttl => a positive integer value to set as time-to-live for the record 
+  ttl => a positive integer value to set as time-to-live for the record
 ```
 *examples:*
+Combining several write operations into one multi-op call:
 ```
 array(
   array("op" => Aerospike::OPERATOR_APPEND, "bin" => "name", "val" => " Ph.D."),
   array("op" => Aerospike::OPERATOR_INCR, "bin" => "age", "val" => 1),
+  array("op" => Aerospike::OPERATOR_READ, "bin" => "age")
+)
+```
+To implement an LRU you can read a bin and touch a record in the same
+operation:
+```
+array(
   array("op" => Aerospike::OPERATOR_READ, "bin" => "age"),
   array("op" => Aerospike::OPERATOR_TOUCH, "ttl" => 20)
 )
@@ -69,6 +78,7 @@ array(
 
 **[options](aerospike.md)** including
 - **Aerospike::OPT_WRITE_TIMEOUT**
+- **Aerospike::OPT_TTL**
 - **[Aerospike::OPT_POLICY_RETRY](http://www.aerospike.com/apidocs/c/db/d65/group__client__policies.html#gaa9730980a8b0eda8ab936a48009a6718)**
 - **[Aerospike::OPT_POLICY_KEY](http://www.aerospike.com/apidocs/c/db/d65/group__client__policies.html#gaa9c8a79b2ab9d3812876c3ec5d1d50ec)**
 - **[Aerospike::OPT_POLICY_GEN](http://www.aerospike.com/apidocs/c/db/d65/group__client__policies.html#ga38c1a40903e463e5d0af0141e8c64061)**
@@ -99,9 +109,9 @@ $operations = array(
   array("op" => Aerospike::OPERATOR_APPEND, "bin" => "name", "val" => " Ph.D."),
   array("op" => Aerospike::OPERATOR_INCR, "bin" => "age", "val" => 1),
   array("op" => Aerospike::OPERATOR_READ, "bin" => "age"),
-  array("op" => Aerospike::OPERATOR_TOUCH, "ttl" => 20)
 );
-$status = $db->operate($key, $operations, $returned);
+$options = array(Aerospike::OPT_TTL => 600);
+$status = $db->operate($key, $operations, $returned, $options);
 if ($status == Aerospike::OK) {
     var_dump($returned);
 } else {

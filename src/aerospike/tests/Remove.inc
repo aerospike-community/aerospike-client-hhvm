@@ -16,6 +16,9 @@ class Remove extends AerospikeTestCommon
         $key = $this->db->initKey("test", "demo", "remove_test");
         $this->db->put($key,array("bin1"=>"1"));
         $this->keys[] = $key;
+        $key = $this->db->initKey("test", "demo", "rem_bin");
+        $this->db->put($key,array("binA" => 10, "binB" => 30));
+        $this->keys[] = $key;
     }
 
     /**
@@ -522,6 +525,40 @@ class Remove extends AerospikeTestCommon
             return $status;
         }
         return Aerospike::ERR_CLIENT;
+    }
+
+    /**
+     * @test
+     * removeBin() with OPT_TTL option
+     *
+     * @pre
+     * Connect using aerospike object to the specified node
+     *
+     * @post
+     * newly initialized Aerospike objects
+     *
+     * @remark
+     * Variants: OO (bug_CLIENT_511)
+     *
+     * @test_plans{1.1}
+     */
+    function bug_CLIENT_511() {
+        $key = $this->keys[1];
+        $status = $this->db->removeBin($key, array("binA"), array(Aerospike::OPT_TTL=>2));
+        if ($status == Aerospike::OK) {
+            if (Aerospike::OK == $this->db->get($key, $get_record)) {
+                $result = array_diff_assoc_recursive($get_record["bins"], array("binB"=>30));
+                if(!empty($result)) {
+                    return Aerospike::ERR_CLIENT;
+                }
+            }
+            sleep(3);
+            $status = $this->db->get($key, $get_record);
+            if (strcmp($this->db->error(), "AEROSPIKE_ERR_RECORD_NOT_FOUND") == 0) {
+                return Aerospike::OK;
+            }
+        }
+        return $status;
     }
 }
 ?>
