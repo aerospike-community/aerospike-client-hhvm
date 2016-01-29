@@ -103,13 +103,15 @@ namespace HPHP {
      * Which is host_entry => address:port.
      ************************************************************************************
      */
-#define CREATE_NEW_ALIAS(iter_hosts)                                         \
-    alias_to_search = (char*) malloc(strlen(config.hosts[iter_hosts].addr) + \
-            MAX_PORT_SIZE + 1);                                              \
-    strcpy(alias_to_search, config.hosts[iter_hosts].addr);                  \
-    strcat(alias_to_search, ":");                                            \
-    sprintf(port , "%d", config.hosts[iter_hosts].port);                     \
-    strcat(alias_to_search, port);
+#define CREATE_NEW_ALIAS(iter_hosts)                                             \
+    if (config.hosts_size) {                                                     \
+        alias_to_search = (char*) malloc(strlen(config.hosts[iter_hosts].addr) + \
+                MAX_PORT_SIZE + 1);                                              \
+        strcpy(alias_to_search, config.hosts[iter_hosts].addr);                  \
+        strcat(alias_to_search, ":");                                            \
+        sprintf(port , "%d", config.hosts[iter_hosts].port);                     \
+        strcat(alias_to_search, port);                                           \
+    }
 
     /*
      ************************************************************************************
