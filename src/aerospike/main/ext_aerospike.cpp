@@ -103,13 +103,17 @@ namespace HPHP {
      * Which is host_entry => address:port.
      ************************************************************************************
      */
-#define CREATE_NEW_ALIAS(iter_hosts)                                         \
-    alias_to_search = (char*) malloc(strlen(config.hosts[iter_hosts].addr) + \
-            MAX_PORT_SIZE + 1);                                              \
-    strcpy(alias_to_search, config.hosts[iter_hosts].addr);                  \
-    strcat(alias_to_search, ":");                                            \
-    sprintf(port , "%d", config.hosts[iter_hosts].port);                     \
-    strcat(alias_to_search, port);
+namespace {
+    inline char* create_new_alias(const as_config& config, int iter_hosts) {
+        auto const host = config.hosts[iter_hosts];
+        auto const addr_len = strlen(host.addr);
+        auto const ret_size = addr_len + 1 + MAX_PORT_SIZE + 1;
+        auto ret = static_cast<char*>(malloc(ret_size));
+
+        snprintf(ret, ret_size, "%s:%d", host.addr, host.port);
+        return ret;
+    }
+}
 
     /*
      ************************************************************************************
@@ -120,14 +124,13 @@ namespace HPHP {
      */
     void Aerospike::iterate_hosts_add_entry(as_config& config, int matched_host_id) {
         char                *alias_to_search = NULL;
-        char                port[MAX_PORT_SIZE];
         int                 iter_hosts;
 
         for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
             if (iter_hosts == matched_host_id) {
                 continue;
             }
-            CREATE_NEW_ALIAS(iter_hosts);
+            alias_to_search = create_new_alias(config, iter_hosts);
             /*
              * Write lock is required as we are modifying as_ref_p and which is
              * pointing to one of the entry in the persistent_list.
@@ -173,7 +176,6 @@ namespace HPHP {
     as_status Aerospike::configure_connection(as_config& config, as_error& error)
     {
         char                *alias_to_search = NULL;
-        char                port[MAX_PORT_SIZE];
         int                 iter_hosts;
         int                 matched_host_id = -1;
         aerospike_ref       *host_entry = NULL;
@@ -182,7 +184,7 @@ namespace HPHP {
 
         if (is_persistent) {
             for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
-                CREATE_NEW_ALIAS(iter_hosts);
+                alias_to_search = create_new_alias(config, iter_hosts);
                 pthread_rwlock_rdlock(&connection_mutex);
                 if (persistent_list[alias_to_search] != nullptr) {
                     host_entry = persistent_list[alias_to_search];
@@ -207,7 +209,7 @@ namespace HPHP {
                 }
             }
 
-            CREATE_NEW_ALIAS(0);
+            alias_to_search = create_new_alias(config, 0);
             create_new_host_entry(config, error);
             if (error.code == AEROSPIKE_OK) {
                 as_ref_p->ref_host_entry++;
