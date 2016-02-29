@@ -92,8 +92,6 @@ namespace HPHP {
             bool is_connected = false;
             bool is_persistent = false;
             int16_t serializer_value = SERIALIZER_PHP;
-            as_error latest_error;
-            pthread_rwlock_t latest_error_mutex;
 
             //static ObjectData* serializer;
             static Variant serializer;
@@ -107,7 +105,13 @@ namespace HPHP {
 
             as_status configure_connection(as_config& config, as_error& error);
 
+            void setError(const as_error& error);
+            const as_error& getError() { return latest_error; }
+
         private:
+            as_error latest_error;
+            pthread_rwlock_t latest_error_mutex;
+
             void create_new_host_entry(as_config& config, as_error& error);
             void iterate_hosts_add_entry(as_config& config, int matched_host_id);
     };
