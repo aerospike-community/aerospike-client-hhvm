@@ -13,6 +13,8 @@ extern "C" {
 }
 
 #include "constants.h"
+#include "hphp/runtime/ext/extension.h"
+#include "hphp/runtime/base/request-local.h"
 
 namespace HPHP {
 #define MAX_PORT_SIZE 6
@@ -77,6 +79,16 @@ namespace HPHP {
     const StaticString s_shm_max_namespaces("shm_max_namespaces");
     const StaticString s_shm_takeover_threshold_sec("shm_takeover_threshold_sec");
     
+    /* Request-local globals for serializer/deserializer */
+    struct AerospikeRequestLocals : RequestEventHandler {
+        Variant serializer, deserializer;
+        void requestInit() override {}
+        void requestShutdown() override {
+            serializer = null_variant;
+            deserializer = null_variant;
+        }
+    };
+
     /*
      ************************************************************************************
      * Aerospike class to maintain the following data:
@@ -95,19 +107,40 @@ namespace HPHP {
             as_error latest_error;
             pthread_rwlock_t latest_error_mutex;
 
-            //static ObjectData* serializer;
-            static Variant serializer;
-            static Variant deserializer;
-            static int is_serializer_registered;
-            static int is_deserializer_registered;
-
             Aerospike();
             void sweep();
             ~Aerospike();
 
+            static bool hasSerializer() {
+                return locals.getInited() && !locals->serializer.isNull();
+            }
+            static void setSerializer(const Variant& callback) {
+                locals->serializer = callback;
+            }
+            static Variant serializer() {
+                if (locals.getInited()) {
+                    return locals->serializer;
+                }
+                return null_variant;
+            }
+            static bool hasDeserializer() {
+                return locals.getInited() && !locals->deserializer.isNull();
+            }
+            static void setDeserializer(const Variant& callback) {
+                locals->deserializer = callback;
+            }
+            static Variant deserializer() {
+                if (locals.getInited()) {
+                    return locals->deserializer;
+                }
+                return null_variant;
+            }
+
             as_status configure_connection(as_config& config, as_error& error);
 
         private:
+            DECLARE_STATIC_REQUEST_LOCAL(AerospikeRequestLocals, locals);
+
             void create_new_host_entry(as_config& config, as_error& error);
             void iterate_hosts_add_entry(as_config& config, int matched_host_id);
     };

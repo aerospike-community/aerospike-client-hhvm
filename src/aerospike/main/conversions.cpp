@@ -287,8 +287,8 @@ namespace HPHP {
                 break;
             case SERIALIZER_USER:
                 *bytes_p = static_pool.get_as_bytes();
-                if (Aerospike::is_serializer_registered) {
-                    execute_user_callback(Aerospike::serializer, bytes_p, value_to_serialize,
+                if (Aerospike::hasSerializer()) {
+                    execute_user_callback(Aerospike::serializer(), bytes_p, value_to_serialize,
                             true, error);
                     if (error.code == AEROSPIKE_OK) {
                         set_as_bytes(bytes_p, value_to_serialize.toString(), AS_BYTES_BLOB, error);
@@ -335,8 +335,8 @@ namespace HPHP {
                 break;
             case AS_BYTES_BLOB:
                 {
-                    if (Aerospike::is_deserializer_registered) {
-                        execute_user_callback(Aerospike::deserializer, &bytes_p, php_value,
+                    if (Aerospike::hasDeserializer()) {
+                        execute_user_callback(Aerospike::deserializer(), &bytes_p, php_value,
                                 false, error);
                         if (error.code != AEROSPIKE_OK) {
                             break;

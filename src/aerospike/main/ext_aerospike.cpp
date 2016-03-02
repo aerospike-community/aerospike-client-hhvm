@@ -28,10 +28,7 @@ namespace HPHP {
     /*
      * Static member's definition
      */
-    Variant Aerospike::serializer;
-    Variant Aerospike::deserializer;
-    int Aerospike::is_serializer_registered = 0;
-    int Aerospike::is_deserializer_registered = 0;
+    IMPLEMENT_REQUEST_LOCAL(AerospikeRequestLocals, Aerospike::locals);
 
     /*
      ************************************************************************************
@@ -399,9 +396,7 @@ namespace HPHP {
             return false;
         }
 
-        Aerospike::serializer = callback;
-        Aerospike::is_serializer_registered = 1;
-
+        Aerospike::setSerializer(callback);
         return true;
     }
     /* }}} */
@@ -415,9 +410,7 @@ namespace HPHP {
             return false;
         }
 
-        Aerospike::deserializer = callback;
-        Aerospike::is_deserializer_registered = 1;
-
+        Aerospike::setDeserializer(callback);
         return true;
     }
     /* }}} */
@@ -1594,8 +1587,6 @@ namespace HPHP {
             {
                 as_error error;
                 aerospike_ref *map_entry = NULL;
-                Aerospike::serializer.releaseForSweep();
-                Aerospike::deserializer.releaseForSweep();
 
                 as_error_init(&error);
 
