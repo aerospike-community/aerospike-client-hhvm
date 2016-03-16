@@ -105,6 +105,9 @@ namespace HPHP {
      */
 namespace {
     inline char* create_new_alias(const as_config& config, int iter_hosts) {
+        assert(iter_hosts >= 0);
+        assert(iter_hosts < config.hosts_size);
+
         auto const host = config.hosts[iter_hosts];
         auto const addr_len = strlen(host.addr);
         auto const ret_size = addr_len + 1 + MAX_PORT_SIZE + 1;
@@ -209,7 +212,7 @@ namespace {
                 }
             }
 
-            alias_to_search = create_new_alias(config, 0);
+            alias_to_search = config.hosts_size ? create_new_alias(config, 0) : NULL;
             create_new_host_entry(config, error);
             if (error.code == AEROSPIKE_OK) {
                 as_ref_p->ref_host_entry++;
