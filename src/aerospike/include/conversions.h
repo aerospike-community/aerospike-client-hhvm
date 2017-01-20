@@ -51,7 +51,7 @@ namespace HPHP {
 
     class StaticPoolManager {
         private:
-            static const uint32_t       STATIC_POOL_MAX_SIZE = 1024;
+            static const uint32_t       STATIC_POOL_MAX_SIZE = 4096;
             as_string                   string_pool[STATIC_POOL_MAX_SIZE];
             as_integer                  integer_pool[STATIC_POOL_MAX_SIZE];
             as_arraylist                list_pool[STATIC_POOL_MAX_SIZE];
