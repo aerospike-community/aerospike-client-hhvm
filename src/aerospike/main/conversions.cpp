@@ -26,7 +26,6 @@ namespace HPHP {
     * This function will create key in the unordered_map.
     * Which is host_entry => address:port:user;
     *
-    * @param alias_to_search    the string with host:port:user;
     * @param iter_host          the iterator for config. hosts;
     * @param config             as_config reference to be populated by this function
     * @param error              as_error reference to be populated by this function
@@ -35,19 +34,20 @@ namespace HPHP {
     * ************************************************************************************
     */
 
-     char* create_alias(char *alias_to_search,int iter_hosts, as_config& config,
+     char* create_alias(int iter_hosts, as_config& config,
             as_error& error){
+        char               *alias_to_search = NULL;
         char               port[MAX_PORT_SIZE];
         int                 alias_length;
         alias_length = strlen(config.hosts[iter_hosts].addr) +
             MAX_PORT_SIZE + strlen(config.user)+ 3;
         alias_to_search = (char*) malloc(alias_length);
-        memset(alias_to_search,'\0', alias_length);
         if(alias_to_search == NULL){
             as_error_update(&error, AEROSPIKE_ERR_CLIENT,
                 "Memory allocation failed for create alias");
             return NULL;
         }
+        memset(alias_to_search,'\0', alias_length);
         strcpy(alias_to_search, config.hosts[iter_hosts].addr);
         strcat(alias_to_search,(char *) ":");
         sprintf(port , "%d", config.hosts[iter_hosts].port);
@@ -420,10 +420,16 @@ namespace HPHP {
         }
         memset(alias_to_search,'\0', alias_length);
         for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
-            if(NULL == ( alias_host_port= create_alias(alias_host_port,iter_hosts, config,error)) || (error.code != AEROSPIKE_OK)){
+            if(NULL == ( alias_host_port= create_alias(iter_hosts, config,error)) || (error.code != AEROSPIKE_OK)){
+                if (alias_to_search) {
+                    free(alias_to_search);
+                    alias_to_search = NULL;
+                }
                 return error.code;
             }
             strcat(alias_to_search , alias_host_port);
+            free(alias_host_port);
+            alias_host_port = NULL;
         }
         std::unordered_map<std::string,int>::const_iterator iter = shm_key_list.find (alias_to_search);
         if(iter != shm_key_list.end()){
