@@ -1,0 +1,7 @@
+CMakeCache.txt
+CMakeFiles/
+CMakeLists.txt
+Makefile
+aerospike-hhvm.so
+cmake_install.cmake
+run-test
