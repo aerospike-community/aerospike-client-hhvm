@@ -231,6 +231,21 @@ namespace HPHP {
 
     /*
      ************************************************************************************
+     * Updates the "lastest_error" field in the object's NativeData
+     * May block while waiting for shared mutex
+     ************************************************************************************
+     */
+    void Aerospike::setError(const as_error& error) {
+        pthread_rwlock_wrlock(&latest_error_mutex);
+        /* https://github.com/aerospike/aerospike-client-c/pull/33
+         * Obviates the need for this const cast.
+         */
+        as_error_copy(&latest_error, const_cast<as_error*>(&error));
+        pthread_rwlock_unlock(&latest_error_mutex);
+    }
+
+    /*
+     ************************************************************************************
      * Definitions of Native methods in PHP Aerospike class declared in
      * ext_aerospike.h and specified in ext_aerospike.php
      ************************************************************************************
@@ -274,9 +289,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
     }
     /* }}} */
 
@@ -329,9 +342,7 @@ namespace HPHP {
             data->is_connected = false;
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -382,9 +393,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -462,9 +471,7 @@ namespace HPHP {
         if (key_initialized) {
             as_key_destroy(&key);
         }
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -505,9 +512,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -538,9 +543,7 @@ namespace HPHP {
                         &error, &info_policy,ns.toString().c_str(), name.toString().c_str());
         }
         
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -597,9 +600,7 @@ namespace HPHP {
         if (key_initialized) {
             as_key_destroy(&key);
         }
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -642,9 +643,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -702,9 +701,7 @@ namespace HPHP {
         if (key_initialized) {
             as_key_destroy(&key);
         }
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -746,9 +743,7 @@ namespace HPHP {
         if (key_initialized) {
             as_key_destroy(&key);
         }
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -799,9 +794,7 @@ namespace HPHP {
         if (key_initialized) {
             as_key_destroy(&key);
         }
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -847,9 +840,7 @@ namespace HPHP {
         if (key_initialized) {
             as_key_destroy(&key);
         }
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -891,9 +882,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -947,9 +936,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -981,9 +968,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -1019,9 +1004,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -1057,9 +1040,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
         return error.code;
     }
 
@@ -1103,10 +1084,7 @@ namespace HPHP {
             as_key_destroy(&key);
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
-
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -1153,10 +1131,7 @@ namespace HPHP {
             as_scan_destroy(&scan);
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
-
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -1218,10 +1193,7 @@ namespace HPHP {
             as_scan_destroy(&scan);
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
-
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -1266,10 +1238,7 @@ namespace HPHP {
             }
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
-
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -1394,10 +1363,7 @@ namespace HPHP {
             as_query_destroy(&query);
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
-
+        data->setError(error);
         return error.code;
     }
     /* }}} */
@@ -1447,9 +1413,7 @@ namespace HPHP {
             as_query_destroy(&query);
         }
 
-        pthread_rwlock_wrlock(&data->latest_error_mutex);
-        as_error_copy(&data->latest_error, &error);
-        pthread_rwlock_unlock(&data->latest_error_mutex);
+        data->setError(error);
 
         result_variant = aggregate_array;
         result_variant.releaseForSweep();
@@ -1462,8 +1426,7 @@ namespace HPHP {
        Displays the error message associated with the last operation */
     int64_t HHVM_METHOD(Aerospike, errorno)
     {
-        auto                data = Native::data<Aerospike>(this_);
-        return data->latest_error.code;
+        return Native::data<Aerospike>(this_)->getError().code;
     }
     /* }}} */
 
@@ -1471,8 +1434,7 @@ namespace HPHP {
        Displays the status code associated with the last operation */
     String HHVM_METHOD(Aerospike, error)
     {
-        auto                data = Native::data<Aerospike>(this_);
-        return data->latest_error.message;
+        return Native::data<Aerospike>(this_)->getError().message;
     }
     /* }}} */
 
