@@ -903,11 +903,14 @@ namespace {
         as_error_init(&error);
 
         get_digest_from_key(key, ns, set, primary_key, &digest_p, error);
-
-        if (error.code == AEROSPIKE_OK) {
+        if (error.code == AEROSPIKE_OK && *digest_p) {
             as_key_destroy(&key);
+            String s = String((char*)digest_p, AS_DIGEST_VALUE_SIZE, CopyString);
+            free(digest_p);
+            return s;
         }
-        return String(digest_p);
+
+        return String();
     }
     /* }}} */
 

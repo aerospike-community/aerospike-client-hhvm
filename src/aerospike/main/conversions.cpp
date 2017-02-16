@@ -1503,8 +1503,7 @@ namespace HPHP {
         }
 
         if (key_p->digest.init) {
-            php_key.set(s_digest, String(strndup((char *) key_p->digest.value,
-                    AS_DIGEST_VALUE_SIZE)));
+            php_key.set(s_digest, String((char *)(key_p->digest.value), AS_DIGEST_VALUE_SIZE, CopyString));
         }
 
         return error.code;
