@@ -103,14 +103,14 @@ namespace HPHP {
 namespace {
     inline char* create_new_alias(const as_config& config, int iter_hosts) {
         assert(iter_hosts >= 0);
-        assert(iter_hosts < config.hosts_size);
+        assert(iter_hosts < config.hosts->size);
 
-        auto const host = config.hosts[iter_hosts];
-        auto const addr_len = strlen(host.addr);
+        as_host* const host = (as_host*)as_vector_get(config.hosts, iter_hosts);
+        auto const addr_len = strlen(host->name);
         auto const ret_size = addr_len + 1 + MAX_PORT_SIZE + 1;
         auto ret = static_cast<char*>(malloc(ret_size));
 
-        snprintf(ret, ret_size, "%s:%d", host.addr, host.port);
+        snprintf(ret, ret_size, "%s:%d", host->name, host->port);
         return ret;
     }
 }
@@ -126,7 +126,7 @@ namespace {
         char                *alias_to_search = NULL;
         int                 iter_hosts;
 
-        for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
+        for (iter_hosts = 0; iter_hosts < config.hosts->size; iter_hosts++) {
             if (iter_hosts == matched_host_id) {
                 continue;
             }
@@ -183,7 +183,7 @@ namespace {
         as_error_reset(&error);
 
         if (is_persistent) {
-            for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
+            for (iter_hosts = 0; iter_hosts < config.hosts->size; iter_hosts++) {
                 alias_to_search = create_new_alias(config, iter_hosts);
                 pthread_rwlock_rdlock(&connection_mutex);
                 if (persistent_list[alias_to_search] != nullptr) {
@@ -209,7 +209,7 @@ namespace {
                 }
             }
 
-            alias_to_search = config.hosts_size ? create_new_alias(config, 0) : NULL;
+            alias_to_search = config.hosts->size ? create_new_alias(config, 0) : NULL;
             create_new_host_entry(config, error);
             if (error.code == AEROSPIKE_OK) {
                 as_ref_p->ref_host_entry++;

@@ -40,16 +40,16 @@ article explain how to upgrade to this version in older distros such as
 Debian 7.
 
 ## Install Aerospike C client
-Get the **3.1.16** release of the [Aerospike C Client](http://www.aerospike.com/download/client/c/3.1.16/)
+Get the **4.1.3** release of the [Aerospike C Client](http://www.aerospike.com/download/client/c/4.1.3/)
 library, and install the development package contained in the tar archive.
 
 For example, on Ubuntu 14.04:
 
 ```
-wget -O aerospike-c-client.tgz http://www.aerospike.com/download/client/c/3.1.16/artifact/ubuntu12
+wget -O aerospike-c-client.tgz http://www.aerospike.com/download/client/c/4.1.3/artifact/ubuntu14
 tar zxvf aerospike-c-client.tgz
-cd aerospike-client-c-3.1.16.ubuntu12.04.x86_64
-sudo dpkg -i aerospike-client-c-devel-3.1.16.ubuntu12.04.x86_64.deb
+cd aerospike-client-c-4.1.3.ubuntu14.04.x86_64
+sudo dpkg -i aerospike-client-c-devel-4.1.3.ubuntu14.04.x86_64.deb
 ```
 
 ## Build and Install the Aerospike HHVM Client
