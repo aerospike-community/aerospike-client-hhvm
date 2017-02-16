@@ -6,4 +6,4 @@ Operate - Operate with same bin negative
 include dirname(__FILE__)."/../../astestframework/astest-phpt-loader.inc";
 aerospike_phpt_runtest("Operate", "testOperateSameBinNegative");
 --EXPECT--
-ERR_REQUEST_INVALID
+OK

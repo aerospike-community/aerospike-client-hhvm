@@ -335,7 +335,7 @@ class GetMany extends AerospikeTestCommon
      * @test_plans{1.1}
      */
     function testGetManyPositiveWithEmptyFilterBins() {
-        $status = $this->db->getMany($this->keys, $records, array());
+        $status = $this->db->getMany($this->keys, $records);
         if ($status !== Aerospike::OK) {
             return $this->db->errorno();
         }
