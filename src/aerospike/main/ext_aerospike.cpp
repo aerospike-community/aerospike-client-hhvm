@@ -205,6 +205,8 @@ namespace {
                     alias_to_search = NULL;
                 }
                 if (matched_host_id != -1) {
+                    as_config_clear_hosts(&config);
+                    as_vector_destroy(config.hosts);
                     return error.code;
                 }
             }
