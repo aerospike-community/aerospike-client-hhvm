@@ -39,7 +39,9 @@ namespace HPHP {
         char               *alias_to_search = NULL;
         char               port[MAX_PORT_SIZE];
         int                 alias_length;
-        alias_length = strlen(config.hosts[iter_hosts].addr) +
+        as_host* host = (as_host*)as_vector_get(config.hosts, iter_hosts);
+        assert(host != NULL);
+        alias_length = strlen(host->name) +
             MAX_PORT_SIZE + strlen(config.user)+ 3;
         alias_to_search = (char*) malloc(alias_length);
         if(alias_to_search == NULL){
@@ -48,9 +50,9 @@ namespace HPHP {
             return NULL;
         }
         memset(alias_to_search,'\0', alias_length);
-        strcpy(alias_to_search, config.hosts[iter_hosts].addr);
+        strcpy(alias_to_search, host->name);
         strcat(alias_to_search,(char *) ":");
-        sprintf(port , "%d", config.hosts[iter_hosts].port);
+        sprintf(port , "%d", host->port);
         strcat(alias_to_search, port);
         strcat(alias_to_search,(char *) ":");
         strcat(alias_to_search, config.user);
@@ -408,8 +410,10 @@ namespace HPHP {
         int                 iter_hosts;
         char                *alias_host_port=NULL;
         int                 alias_length=0;
-        for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
-            alias_length += strlen(config.hosts[iter_hosts].addr) +
+        for (iter_hosts = 0; iter_hosts < config.hosts->size; iter_hosts++) {
+            as_host *host = (as_host*)as_vector_get(config.hosts, iter_hosts);
+            assert(host != NULL);
+            alias_length += strlen(host->name) +
             MAX_PORT_SIZE + 3 + strlen(config.user);
         }
         alias_to_search = (char*) malloc(alias_length);
@@ -419,8 +423,8 @@ namespace HPHP {
             return error.code;
         }
         memset(alias_to_search,'\0', alias_length);
-        for (iter_hosts = 0; iter_hosts < config.hosts_size; iter_hosts++) {
-            if(NULL == ( alias_host_port= create_alias(iter_hosts, config,error)) || (error.code != AEROSPIKE_OK)){
+        for (iter_hosts = 0; iter_hosts < config.hosts->size; iter_hosts++) {
+            if(NULL == ( alias_host_port= create_alias(iter_hosts, config, error)) || (error.code != AEROSPIKE_OK)){
                 if (alias_to_search) {
                     free(alias_to_search);
                     alias_to_search = NULL;
@@ -606,10 +610,8 @@ namespace HPHP {
                 return as_error_update(&error, AEROSPIKE_ERR_PARAM,
                         "Invalid hosts array: Value of each host is expected to be an array of addr, port");
             }
-
-            config.hosts[i].addr = host[s_addr].toString().c_str();
-            config.hosts[i].port = host[s_port].isInteger() ? host[s_port].toInt64() : host[s_port].isString() ? atoi(host[s_port].toString().c_str()) : 0;
-            config.hosts_size++;
+            as_config_add_host(&config, host[s_addr].toString().c_str(),
+               host[s_port].isInteger() ? host[s_port].toInt64() : host[s_port].isString() ? atoi(host[s_port].toString().c_str()) : 0);
         }
         if(AEROSPIKE_OK != verify_shm_key_store_it(config,error)) {
             return error.code;
@@ -1501,8 +1503,7 @@ namespace HPHP {
         }
 
         if (key_p->digest.init) {
-            php_key.set(s_digest, String(strndup((char *) key_p->digest.value,
-                    AS_DIGEST_VALUE_SIZE)));
+            php_key.set(s_digest, String((char *)(key_p->digest.value), AS_DIGEST_VALUE_SIZE, CopyString));
         }
 
         return error.code;
