@@ -82,6 +82,7 @@ namespace HPHP {
     /* Request-local globals for serializer/deserializer */
     struct AerospikeRequestLocals : RequestEventHandler {
         Variant serializer, deserializer;
+        void vscan (IMarker &mark) const override {}
         void requestInit() override {}
         void requestShutdown() override {
             serializer = null_variant;
