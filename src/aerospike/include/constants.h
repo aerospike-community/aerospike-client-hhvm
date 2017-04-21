@@ -52,6 +52,12 @@ namespace HPHP {
 
     #define SERIALIZER_DEFAULT "1"
 
+    #if HHVM_VERSION_BRANCH >= 201216
+        #define UNINIT_NULL_VARIANT    uninit_variant
+    #else
+        #define UNINIT_NULL_VARIANT    null_variant
+    #endif
+
     /* 
      *******************************************************************************************************
      * Structure to map constant number to constant name string for Aerospike extension constants.

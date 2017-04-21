@@ -3,8 +3,8 @@ This is a prototype of an Aerospike client implemented as a
 [HHVM Native Interface](https://github.com/facebook/hhvm/wiki/Extension-API)
 extension.
 
-Currently builds on 64-bit Ubuntu 14.04 LTS against HHVM **3.9.1**, with the
-aerospike C client release **3.1.16**. We intend to support HHVM
+Currently builds on 64-bit Ubuntu 14.04 LTS against HHVM **3.9.1 - 3.18.2**, with the
+aerospike C client release **4.1.5**. We intend to support HHVM
 [LTS releases](https://github.com/facebook/hhvm/wiki/Long-term-support-%28LTS%29#lts-releases).
 
 ## Documentation
@@ -40,16 +40,16 @@ article explain how to upgrade to this version in older distros such as
 Debian 7.
 
 ## Install Aerospike C client
-Get the **4.1.3** release of the [Aerospike C Client](http://www.aerospike.com/download/client/c/4.1.3/)
+Get the **4.1.5** release of the [Aerospike C Client](http://www.aerospike.com/download/client/c/4.1.5/)
 library, and install the development package contained in the tar archive.
 
 For example, on Ubuntu 14.04:
 
 ```
-wget -O aerospike-c-client.tgz http://www.aerospike.com/download/client/c/4.1.3/artifact/ubuntu14
+wget -O aerospike-c-client.tgz http://www.aerospike.com/download/client/c/4.1.5/artifact/ubuntu14
 tar zxvf aerospike-c-client.tgz
-cd aerospike-client-c-4.1.3.ubuntu14.04.x86_64
-sudo dpkg -i aerospike-client-c-devel-4.1.3.ubuntu14.04.x86_64.deb
+cd aerospike-client-c-4.1.5.ubuntu14.04.x86_64
+sudo dpkg -i aerospike-client-c-devel-4.1.5.ubuntu14.04.x86_64.deb
 ```
 
 ## Build and Install the Aerospike HHVM Client

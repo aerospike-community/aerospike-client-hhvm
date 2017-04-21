@@ -18,14 +18,6 @@ namespace HPHP {
 
     /*
      *******************************************************************************************
-     * Declaration of mutex used in case of CONCURRENT policy for
-     * aerospike_scan_foreach()
-     *******************************************************************************************
-     */
-    extern pthread_rwlock_t scan_query_callback_mutex;
-
-    /*
-     *******************************************************************************************
      * Declaration of function to initialize scan API required CSDK structures
      *******************************************************************************************
      */

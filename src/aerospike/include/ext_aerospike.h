@@ -84,8 +84,8 @@ namespace HPHP {
         Variant serializer, deserializer;
         void requestInit() override {}
         void requestShutdown() override {
-            serializer = null_variant;
-            deserializer = null_variant;
+            serializer = UNINIT_NULL_VARIANT;
+            deserializer = UNINIT_NULL_VARIANT;
         }
     };
 
@@ -119,7 +119,7 @@ namespace HPHP {
                 if (locals.getInited()) {
                     return locals->serializer;
                 }
-                return null_variant;
+                return UNINIT_NULL_VARIANT;
             }
             static bool hasDeserializer() {
                 return locals.getInited() && !locals->deserializer.isNull();
@@ -131,7 +131,7 @@ namespace HPHP {
                 if (locals.getInited()) {
                     return locals->deserializer;
                 }
-                return null_variant;
+                return UNINIT_NULL_VARIANT;
             }
 
             as_status configure_connection(as_config& config, as_error& error);

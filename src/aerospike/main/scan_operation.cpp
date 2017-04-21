@@ -30,10 +30,6 @@ namespace HPHP {
             return false;
         }
 
-        pthread_rwlock_wrlock(&scan_query_callback_mutex);
-        if (g_context.isNull()) {
-            hphp_session_init();
-        }
         Array           temp_php_record = Array::Create();
         foreach_callback_user_udata      *conversion_data_p = (foreach_callback_user_udata *)udata;
 
@@ -47,8 +43,6 @@ namespace HPHP {
         if (ret.isBoolean() && ret.toBoolean() == false) {
             do_continue = false;
         }
-
-        pthread_rwlock_unlock(&scan_query_callback_mutex);
 
         return do_continue;
     }
@@ -608,11 +602,6 @@ namespace HPHP {
             return false;
         }
 
-        pthread_rwlock_wrlock(&scan_query_callback_mutex);
-        if (g_context.isNull()) {
-            hphp_session_init();
-        }
-
         foreach_callback_udata      *udata_p = (foreach_callback_udata *)udata;
 
         if (as_val_to_php_variant(val_p, php_value, udata_p->error) != AEROSPIKE_OK) {
@@ -623,7 +612,6 @@ namespace HPHP {
                 udata_p->data.append(php_value);
             }
         }
-        pthread_rwlock_unlock(&scan_query_callback_mutex);
 
         return do_continue;
     }

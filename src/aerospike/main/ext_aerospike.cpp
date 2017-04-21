@@ -21,9 +21,8 @@ namespace HPHP {
      */
     std::unordered_map<std::string, aerospike_ref *> persistent_list;
     pthread_rwlock_t connection_mutex;
-    pthread_rwlock_t scan_query_callback_mutex;
 
-	ini_entries ini_entry;
+    ini_entries ini_entry;
 
     /*
      * Static member's definition
@@ -160,6 +159,7 @@ namespace {
             as_error_update(&error, AEROSPIKE_ERR_CLIENT, "memory allocation failed");
             return;
         }
+        config.thread_pool_size = 0;
         as_ref_p->as_p = NULL;
         as_ref_p->ref_host_entry = 0;
         as_ref_p->ref_php_object = 1;
@@ -182,6 +182,7 @@ namespace {
 
         as_error_reset(&error);
 
+        config.thread_pool_size = 0;
         if (is_persistent) {
             for (iter_hosts = 0; iter_hosts < config.hosts->size; iter_hosts++) {
                 alias_to_search = create_new_alias(config, iter_hosts);
@@ -1498,7 +1499,6 @@ namespace {
                 HHVM_STATIC_ME(Aerospike, setDeserializer);
                 Native::registerNativeDataInfo<Aerospike>(s_Aerospike.get());
                 pthread_rwlock_init(&connection_mutex, NULL);
-                pthread_rwlock_init(&scan_query_callback_mutex, NULL);
 
                 loadSystemlib();
             }
