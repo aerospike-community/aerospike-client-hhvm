@@ -3,7 +3,7 @@ This is a prototype of an Aerospike client implemented as a
 [HHVM Native Interface](https://github.com/facebook/hhvm/wiki/Extension-API)
 extension.
 
-Currently builds on 64-bit Ubuntu 14.04 LTS against HHVM **3.9.1 - 3.12.14**, with the
+Currently builds on 64-bit Ubuntu 14.04 LTS against HHVM **3.9.1 - 3.18.2**, with the
 aerospike C client release **4.1.5**. We intend to support HHVM
 [LTS releases](https://github.com/facebook/hhvm/wiki/Long-term-support-%28LTS%29#lts-releases).
 
